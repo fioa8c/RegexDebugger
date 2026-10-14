@@ -36,9 +36,10 @@ export function runRegex(
     throw new RegexError(`Invalid regular expression: /${pattern}/${flags}\n${msg}`)
   }
 
-  const force = effectiveFlags.includes('g')
-    ? new RegExp(source, effectiveFlags)
-    : new RegExp(source, effectiveFlags + 'g')
+  let iterFlags = effectiveFlags
+  if (!iterFlags.includes('g')) iterFlags += 'g'
+  if (!iterFlags.includes('d')) iterFlags += 'd'
+  const force = new RegExp(source, iterFlags)
 
   const iterator = text.matchAll(force) as Iterator<IterMatch>
   let collected: IterMatch[] = []

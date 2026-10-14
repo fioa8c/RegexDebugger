@@ -19,16 +19,30 @@ describe('runRegex', () => {
   })
 
   it('captures group values and offsets', () => {
-    const r = runRegex('(<[^>]+>\\w+\\s+[\\d.]+)', '', 'x <html> tag 3.14', 1)
+    const r = runRegex('(<[^>]+>\\s+\\w+\\s+[\\d.]+)', '', 'x <html> tag 3.14', 1)
     expect(r).toHaveLength(1)
     expect(r[0].groups[0].value).toBe('<html> tag 3.14')
     expect(r[0].groups[0].offset).toBe(2)
   })
 
   it('reports unmatched optional groups as null', () => {
-    const r = runRegex('a(b)?c', '', 'adc', 1)
+    const r = runRegex('a(b)?c', '', 'ac', 1)
+    expect(r).toHaveLength(1)
     expect(r[0].groups[0].value).toBeNull()
     expect(r[0].groups[0].offset).toBe(-1)
+  })
+
+  it('reports group offsets for every match with g flag', () => {
+    const r = runRegex('(\\d)(\\w)', 'g', '1a 2b', 2)
+    expect(r.map((m) => m.groups.map((g) => [g.value, g.offset]))).toEqual([
+      [['1', 0], ['a', 1]],
+      [['2', 3], ['b', 4]],
+    ])
+  })
+
+  it('accepts flags that already include d', () => {
+    const r = runRegex('(b)', 'gd', 'abab', 1)
+    expect(r.map((m) => m.groups[0].offset)).toEqual([1, 3])
   })
 
   it('does not infinite-loop on zero-width matches', () => {
