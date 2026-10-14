@@ -90,6 +90,14 @@ describe('describeToken', () => {
     expect(first('[\\]-]')).toBe('one of "]" or "-"')
   })
 
+  it('describes ranges with escaped endpoints', () => {
+    expect(first('[!-\\/]')).toBe('one of "!-/"')
+    expect(first('[\\]-a]')).toBe('one of "]-a"')
+    expect(first('[a-\\d]')).toBe('one of "a", "-", or a digit (0-9)')
+    expect(first('[\\d-z]')).toBe('one of a digit (0-9), "-", or "z"')
+    expect(first('[\\t-\\r]')).toBe('one of "\\t-\\r"')
+  })
+
   it('describes empty and match-anything classes', () => {
     expect(first('[]')).toBe('an empty character class')
     expect(first('[^]')).toBe('any character, including line terminators')

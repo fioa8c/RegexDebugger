@@ -31,6 +31,16 @@ function classEscape(esc: string): string {
   return META[esc] ?? CONTROL[esc] ?? `"${esc[1]}"`
 }
 
+function classAtom(body: string, i: number): string {
+  return body[i] === '\\' && i + 1 < body.length ? body.slice(i, i + 2) : body[i]
+}
+
+function rangeEnd(atom: string): string | null {
+  if (atom.length === 1) return atom
+  if (META[atom]) return null
+  return CONTROL[atom] || atom === '\\b' ? atom : atom[1]
+}
+
 function describeClass(text: string): string {
   const neg = text[1] === '^'
   let body = text.slice(neg ? 2 : 1)
@@ -38,18 +48,20 @@ function describeClass(text: string): string {
   const parts: string[] = []
   let i = 0
   while (i < body.length) {
-    if (body[i] === '\\' && i + 1 < body.length) {
-      parts.push(classEscape(body.slice(i, i + 2)))
-      i += 2
-      continue
+    const lo = classAtom(body, i)
+    const j = i + lo.length
+    if (body[j] === '-' && j + 1 < body.length) {
+      const hi = classAtom(body, j + 1)
+      const from = rangeEnd(lo)
+      const to = rangeEnd(hi)
+      if (from !== null && to !== null) {
+        parts.push(`"${from}-${to}"`)
+        i = j + 1 + hi.length
+        continue
+      }
     }
-    if (body[i + 1] === '-' && i + 2 < body.length) {
-      parts.push(`"${body.slice(i, i + 3)}"`)
-      i += 3
-      continue
-    }
-    parts.push(`"${body[i]}"`)
-    i++
+    parts.push(lo.length === 2 ? classEscape(lo) : `"${lo}"`)
+    i = j
   }
   if (parts.length === 0) {
     return neg ? 'any character, including line terminators' : 'an empty character class'

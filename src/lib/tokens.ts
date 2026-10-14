@@ -21,6 +21,7 @@ export const REFERENCE: ReferenceEntry[] = [
   { pattern: '(...)', description: 'a capturing group' },
   { pattern: '(?<name>...)', description: 'a named capturing group' },
   { pattern: '(?=...)', description: 'positive lookahead' },
+  { pattern: '(?!...)', description: 'negative lookahead' },
   { pattern: '(?<=...)', description: 'positive lookbehind' },
   { pattern: '(?<!...)', description: 'negative lookbehind' },
   { pattern: 'a?', description: 'zero or one occurrence of a' },
