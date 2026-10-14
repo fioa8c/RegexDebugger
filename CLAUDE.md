@@ -27,7 +27,7 @@ All state lives in `App.tsx` (`pattern`, `flags`, `input`, active tab). One `use
 
 **Explanation pane:** `flattenTokens` (depth-tagged, pre-order) → `describeToken` from `lib/describe.ts` for each token. Indentation comes from depth. `describeToken` recurses into group children to build the group's summary line.
 
-**Highlighting overlay** (`components/CodeArea.tsx` + `Highlighter.tsx`): a transparent `<textarea>` sits on top of a `Highlighter` div that renders colored spans via `dangerouslySetInnerHTML`. Scroll position is synced by hand in `onScroll`. Both layers must keep identical font and metrics in CSS (`.codearea-ta, .codearea-hl`). `buildHtml` resolves overlapping spans per character, with the **shortest span winning**. This is how group highlights appear over the whole-match highlight. HTML is escaped there; keep it that way when you change rendering.
+**Highlighting overlay** (`components/CodeArea.tsx` + `Highlighter.tsx`): a transparent `<textarea>` sits on top of a `Highlighter` div that renders colored spans via `dangerouslySetInnerHTML`. Scroll position is synced by hand in `onScroll`. Both layers must keep identical font and metrics in CSS (`.codearea-ta, .codearea-hl`). `buildHtml` resolves overlapping spans per character, with the **shortest span winning** and ties going to the later span (so a group that covers the whole match still shows its color). This is how group highlights appear over the whole-match highlight. HTML is escaped there; keep it that way when you change rendering.
 
 **Class/color tables that must stay in sync:**
 - `TOKEN_CLASS` in `App.tsx` ↔ `.tok-*` rules in `index.css`. Adding a `TokenType` means updating both, plus `QUANTIFIABLE` in `explain.ts` if it applies, and `baseAtom`/`describeToken` in `describe.ts`.

@@ -24,7 +24,7 @@ function buildHtml(text: string, spans: Span[]): string {
     const start = Math.max(0, Math.min(s.start, n))
     const end = Math.max(start, Math.min(s.end, n))
     for (let p = start; p < end; p++) {
-      if (end - start < len[p]) {
+      if (end - start <= len[p]) {
         len[p] = end - start
         color[p] = s.className
       }

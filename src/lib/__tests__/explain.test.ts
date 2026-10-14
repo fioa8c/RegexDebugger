@@ -104,4 +104,20 @@ describe('tokenize', () => {
     ])
     expect(extractGroupLabels(tokenize('(?:a)(?=b)'))).toEqual([])
   })
+
+
+  it('folds lazy quantifiers after groups', () => {
+    const lazyStar = tokenize('(a)*?')
+    expect(lazyStar).toHaveLength(1)
+    expect(lazyStar[0]).toMatchObject({ quantifier: '*?', start: 0, end: 5 })
+    const lazyRange = tokenize('(a){2,3}?')
+    expect(lazyRange).toHaveLength(1)
+    expect(lazyRange[0]).toMatchObject({ quantifier: '{2,3}?', end: 9 })
+  })
+
+  it('leaves a third ? as a standalone quantifier', () => {
+    const t = tokenize('a???')
+    expect(t.map((x) => x.text)).toEqual(['a??', '?'])
+    expect(t[1].type).toBe('quantifier')
+  })
 })

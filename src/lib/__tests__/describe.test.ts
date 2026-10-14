@@ -61,4 +61,9 @@ describe('describeToken', () => {
     expect(first('(?=a)')).toBe('a lookahead: the input must be followed by matches "a"')
     expect(first('(?<=a)')).toBe('a lookbehind: the input must be preceded by matches "a"')
   })
+
+
+  it('describes a negated two-member class', () => {
+    expect(first('[^ab]')).toBe('any character other than "a" or "b"')
+  })
 })

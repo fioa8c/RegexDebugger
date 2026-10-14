@@ -162,19 +162,19 @@ body {
 .__hl-tail { display: inline; }
 
 .hl-match {
-  background: rgba(126,231,135,0.35);
+  background: rgba(205,211,222,0.14);
   border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(126,231,135,0.4);
+  box-shadow: 0 0 0 1px rgba(205,211,222,0.35);
 }
 
-.hl-g0 { background: var(--g0); mix-blend-mode: multiply; }
-.hl-g1 { background: var(--g1); mix-blend-mode: multiply; }
-.hl-g2 { background: var(--g2); mix-blend-mode: multiply; }
-.hl-g3 { background: var(--g3); mix-blend-mode: multiply; }
-.hl-g4 { background: var(--g4); mix-blend-mode: multiply; }
-.hl-g5 { background: var(--g5); mix-blend-mode: multiply; }
-.hl-g6 { background: var(--g6); mix-blend-mode: multiply; }
-.hl-g7 { background: var(--g7); mix-blend-mode: multiply; }
+.hl-g0 { background: color-mix(in srgb, var(--g0) 40%, transparent); }
+.hl-g1 { background: color-mix(in srgb, var(--g1) 40%, transparent); }
+.hl-g2 { background: color-mix(in srgb, var(--g2) 40%, transparent); }
+.hl-g3 { background: color-mix(in srgb, var(--g3) 40%, transparent); }
+.hl-g4 { background: color-mix(in srgb, var(--g4) 40%, transparent); }
+.hl-g5 { background: color-mix(in srgb, var(--g5) 40%, transparent); }
+.hl-g6 { background: color-mix(in srgb, var(--g6) 40%, transparent); }
+.hl-g7 { background: color-mix(in srgb, var(--g7) 40%, transparent); }
 
 .tok-lit { color: #ff6b6b; }
 .tok-anchor { color: #ffb86c; font-weight: 700; }

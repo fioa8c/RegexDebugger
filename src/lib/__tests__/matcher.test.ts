@@ -59,4 +59,9 @@ describe('runRegex', () => {
     const r = runRegex('^\\w+', 'gm', 'ab\ncd\nef', 0)
     expect(r.map((m) => m.text)).toEqual(['ab', 'cd', 'ef'])
   })
+
+
+  it('reports offsets alongside other flags', () => {
+    expect(runRegex('(b)', 'gimsu', 'aBab', 1).map((m) => m.groups[0].offset)).toEqual([1, 3])
+  })
 })
