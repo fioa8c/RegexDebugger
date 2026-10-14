@@ -62,6 +62,17 @@ describe('describeToken', () => {
     expect(first('(?<=a)')).toBe('a lookbehind: the input must be preceded by matches "a"')
   })
 
+  it('describes negative lookarounds', () => {
+    expect(first('(?!a)')).toBe(
+      'a negative lookahead: the input must not be followed by matches "a"',
+    )
+    expect(first('(?<!\\$)')).toBe(
+      'a negative lookbehind: the input must not be preceded by matches "$"',
+    )
+    expect(first('(?!)')).toBe('an empty negative lookahead')
+    expect(first('(?=)')).toBe('an empty lookahead')
+  })
+
 
   it('describes a negated two-member class', () => {
     expect(first('[^ab]')).toBe('any character other than "a" or "b"')

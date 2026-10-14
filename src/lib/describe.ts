@@ -135,12 +135,12 @@ export function describeToken(t: Token, flags = ''): string {
         : `an empty named group "${name ?? ''}"`
     } else if (t.type === 'group-non') {
       label = inner ? `a non-capturing group: ${inner}` : 'an empty non-capturing group'
-    } else if (t.type === 'group-lookahead') {
-      label = inner ? `a lookahead: the input must be followed by ${inner}` : 'an empty lookahead'
     } else {
-      label = inner
-        ? `a lookbehind: the input must be preceded by ${inner}`
-        : 'an empty lookbehind'
+      const ahead = t.type === 'group-lookahead'
+      const neg = t.text.startsWith(ahead ? '(?!' : '(?<!')
+      const kind = `${neg ? 'negative ' : ''}${ahead ? 'lookahead' : 'lookbehind'}`
+      const rel = `${neg ? 'not ' : ''}be ${ahead ? 'followed' : 'preceded'} by`
+      label = inner ? `a ${kind}: the input must ${rel} ${inner}` : `an empty ${kind}`
     }
     return label + quantSuffix(t.quantifier)
   }

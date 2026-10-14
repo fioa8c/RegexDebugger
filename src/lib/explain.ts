@@ -92,9 +92,7 @@ function groupHeader(src: string, i: number): { type: TokenType; len: number } {
   if (src[i + 1] === '?') {
     const c = src[i + 2]
     if (c === ':') return { type: 'group-non', len: 3 }
-    if (c === '=' || c === '!') {
-      return { type: c === '=' ? 'group-lookahead' : 'group-lookbehind', len: 3 }
-    }
+    if (c === '=' || c === '!') return { type: 'group-lookahead', len: 3 }
     if (c === '<') {
       if (src[i + 3] === '=' || src[i + 3] === '!') {
         return { type: 'group-lookbehind', len: 4 }

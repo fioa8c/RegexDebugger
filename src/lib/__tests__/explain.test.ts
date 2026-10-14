@@ -76,6 +76,11 @@ describe('tokenize', () => {
     expect(tokenize('(?<name>ab)')[0].type).toBe('group-named')
   })
 
+  it('types negative lookarounds by direction', () => {
+    expect(tokenize('(?!ab)')[0]).toMatchObject({ type: 'group-lookahead', text: '(?!' })
+    expect(tokenize('(?<!ab)')[0]).toMatchObject({ type: 'group-lookbehind', text: '(?<!' })
+  })
+
   it('keeps absolute offsets in nested group children', () => {
     const t = tokenize('(a(b)?)')
     const outer = t[0]
