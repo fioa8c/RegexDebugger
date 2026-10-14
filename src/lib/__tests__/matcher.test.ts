@@ -45,6 +45,15 @@ describe('runRegex', () => {
     expect(r.map((m) => m.groups[0].offset)).toEqual([1, 3])
   })
 
+  it('matches without capture groups, with or without a user d flag', () => {
+    const expected = [
+      { index: 0, text: 'a', groups: [] },
+      { index: 1, text: 'a', groups: [] },
+    ]
+    expect(runRegex('a', 'g', 'aa', 0)).toEqual(expected)
+    expect(runRegex('a', 'gd', 'aa', 0)).toEqual(expected)
+  })
+
   it('does not infinite-loop on zero-width matches', () => {
     const r = runRegex('a*', 'g', 'abc', 0)
     expect(r.length).toBeLessThan(100)

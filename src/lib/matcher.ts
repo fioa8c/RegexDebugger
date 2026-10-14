@@ -38,7 +38,7 @@ export function runRegex(
 
   let iterFlags = effectiveFlags
   if (!iterFlags.includes('g')) iterFlags += 'g'
-  if (!iterFlags.includes('d')) iterFlags += 'd'
+  if (groupCount > 0 && !iterFlags.includes('d')) iterFlags += 'd'
   const force = new RegExp(source, iterFlags)
 
   const iterator = text.matchAll(force) as Iterator<IterMatch>

@@ -1,4 +1,4 @@
-import type { Token } from './explain'
+import { isLazy, type Token } from './explain'
 
 const CONTROL: Record<string, string> = {
   '\\n': 'a line feed',
@@ -67,7 +67,7 @@ function quantSuffix(q?: string): string {
   if (!q) return ''
   let core = q
   let lazy = false
-  if (core.length > 1 && core.endsWith('?')) {
+  if (isLazy(core)) {
     core = core.slice(0, -1)
     lazy = true
   }

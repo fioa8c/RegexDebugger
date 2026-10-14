@@ -42,7 +42,7 @@ const QUANTIFIABLE = new Set<TokenType>([
   'group-lookbehind',
 ])
 
-function isLazy(q: string): boolean {
+export function isLazy(q: string): boolean {
   return q.length > 1 && q.endsWith('?')
 }
 
