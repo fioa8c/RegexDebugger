@@ -22,6 +22,10 @@ function unesc(s: string): string {
   return s.replace(/\\(.)/g, '$1')
 }
 
+function atomText(t: Token): string {
+  return t.quantifier ? t.text.slice(0, -t.quantifier.length) : t.text
+}
+
 function describeClass(text: string): string {
   const neg = text[1] === '^'
   let body = text.slice(neg ? 2 : 1)
@@ -43,10 +47,13 @@ function describeClass(text: string): string {
     i++
   }
   if (parts.length === 0) return 'an empty character class'
+  const quoted = parts.map((p) => `"${p}"`)
   const list =
-    parts.length === 1
-      ? `"${parts[0]}"`
-      : parts.slice(0, -1).join(', ') + ', or ' + parts[parts.length - 1]
+    quoted.length === 1
+      ? quoted[0]
+      : quoted.length === 2
+        ? `${quoted[0]} or ${quoted[1]}`
+        : quoted.slice(0, -1).join(', ') + ', or ' + quoted[quoted.length - 1]
   return neg ? `any character other than ${list}` : `one of ${list}`
 }
 
@@ -54,9 +61,9 @@ function quantSuffix(q?: string): string {
   if (!q) return ''
   let core = q
   let lazy = false
-  if (core.endsWith('?')) {
+  if (core.length > 1 && core.endsWith('?')) {
     core = core.slice(0, -1)
-    lazy = core !== ''
+    lazy = true
   }
   let phrase = ''
   if (core === '*') phrase = 'zero or more times'
@@ -78,26 +85,27 @@ function quantSuffix(q?: string): string {
 }
 
 function baseAtom(t: Token, flags: string): string {
+  const text = atomText(t)
   switch (t.type) {
     case 'literal':
-      return `matches "${unesc(t.text)}"`
+      return `matches "${unesc(text)}"`
     case 'dot':
       return flags.includes('s')
         ? 'any character'
         : 'any character except line terminators'
     case 'meta-class':
-      return META[t.text] ?? `escape sequence ${t.text}`
+      return META[text] ?? `escape sequence ${text}`
     case 'escape-seq':
-      return CONTROL[t.text] ?? `escape sequence ${t.text}`
+      return CONTROL[text] ?? `escape sequence ${text}`
     case 'backref':
-      return `the text captured by group ${unesc(t.text)}`
+      return `the text captured by group ${unesc(text)}`
     case 'char-class':
-      return describeClass(t.text)
+      return describeClass(text)
     case 'anchor':
-      if (t.text === '^') return flags.includes('m') ? 'the start of a line' : 'the start of the string'
-      if (t.text === '$') return flags.includes('m') ? 'the end of a line' : 'the end of the string'
-      if (t.text === '\\b') return 'a word boundary'
-      if (t.text === '\\B') return 'a non-word boundary'
+      if (text === '^') return flags.includes('m') ? 'the start of a line' : 'the start of the string'
+      if (text === '$') return flags.includes('m') ? 'the end of a line' : 'the end of the string'
+      if (text === '\\b') return 'a word boundary'
+      if (text === '\\B') return 'a non-word boundary'
       return 'an anchor'
     case 'alt':
       return 'an alternation branch (or)'

@@ -41,6 +41,19 @@ describe('describeToken', () => {
     expect(last('a*')).toBe('matches "a", zero or more times')
   })
 
+  it('describes plain and lazy optional quantifiers', () => {
+    expect(last('ab?')).toBe('matches "b", zero or one times')
+    expect(last('a??')).toBe('matches "a", zero or one times (lazy)')
+    expect(last('a{2,3}?')).toBe('matches "a", between 2 and 3 times (lazy)')
+  })
+
+  it('describes quantified non-literal atoms', () => {
+    expect(first('\\d+')).toBe('a digit (0-9), one or more times')
+    expect(first('[ab]*')).toBe('one of "a" or "b", zero or more times')
+    expect(first('\\1?')).toBe('the text captured by group 1, zero or one times')
+    expect(first('\\n{2}')).toBe('a line feed, exactly 2 times')
+  })
+
   it('describes groups with children', () => {
     expect(first('(ab)')).toBe('a group capturing: matches "a" matches "b"')
     expect(first('(?:x)')).toBe('a non-capturing group: matches "x"')
