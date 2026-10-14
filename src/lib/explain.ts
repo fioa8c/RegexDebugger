@@ -42,6 +42,19 @@ const QUANTIFIABLE = new Set<TokenType>([
   'group-lookbehind',
 ])
 
+function isLazy(q: string): boolean {
+  return q.length > 1 && q.endsWith('?')
+}
+
+function shift(t: Token, by: number): Token {
+  return {
+    ...t,
+    start: t.start + by,
+    end: t.end + by,
+    ...(t.children && { children: t.children.map((c) => shift(c, by)) }),
+  }
+}
+
 function classEnd(src: string, i: number): number {
   let k = i + 1
   if (src[k] === '^') k++
@@ -145,11 +158,7 @@ export function tokenize(pattern: string): Token[] {
         out.push({ type, text: src.slice(i, i + len), start: i, end: src.length })
         i = src.length
       } else {
-        const children = tokenize(src.slice(i + len, j)).map((c) => ({
-          ...c,
-          start: c.start + i + len,
-          end: c.end + i + len,
-        }))
+        const children = tokenize(src.slice(i + len, j)).map((c) => shift(c, i + len))
         out.push({ type, text: src.slice(i, i + len), start: i, end: j + 1, children })
         i = j + 1
       }
@@ -179,7 +188,7 @@ export function tokenize(pattern: string): Token[] {
       let ok = false
       if (prev && QUANTIFIABLE.has(prev.type) && prev.end === i) {
         if (prev.quantifier === undefined) ok = true
-        else if (ch === '?' && /^[*+]?$/.test(prev.quantifier)) ok = true
+        else if (ch === '?' && !isLazy(prev.quantifier)) ok = true
       }
       if (ok) {
         prev.text += ch
@@ -193,7 +202,7 @@ export function tokenize(pattern: string): Token[] {
     }
 
     if (ch === '{') {
-      const m = /^\{\d+(?:,\d*)?\}$/.exec(src.slice(i, i + 16))
+      const m = /^\{\d+(?:,\d*)?\}/.exec(src.slice(i))
       if (m) {
         const prev = out[out.length - 1]
         if (
