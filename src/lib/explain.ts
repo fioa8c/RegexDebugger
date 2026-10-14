@@ -58,7 +58,6 @@ function shift(t: Token, by: number): Token {
 function classEnd(src: string, i: number): number {
   let k = i + 1
   if (src[k] === '^') k++
-  if (src[k] === ']') k++
   while (k < src.length && src[k] !== ']') {
     if (src[k] === '\\' && k + 1 < src.length) k++
     k++

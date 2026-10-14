@@ -66,4 +66,21 @@ describe('describeToken', () => {
   it('describes a negated two-member class', () => {
     expect(first('[^ab]')).toBe('any character other than "a" or "b"')
   })
+
+  it('describes escapes inside character classes', () => {
+    expect(first('[\\d.]')).toBe('one of a digit (0-9) or "."')
+    expect(first('[\\n\\t]')).toBe('one of a line feed or a tab character')
+    expect(first('[^\\d\\s]')).toBe(
+      'any character other than a digit (0-9) or a whitespace character',
+    )
+    expect(first('[\\b\\w-]')).toBe(
+      'one of a backspace, a word character (A-Z a-z 0-9 _), or "-"',
+    )
+    expect(first('[\\]-]')).toBe('one of "]" or "-"')
+  })
+
+  it('describes empty and match-anything classes', () => {
+    expect(first('[]')).toBe('an empty character class')
+    expect(first('[^]')).toBe('any character, including line terminators')
+  })
 })

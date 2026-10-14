@@ -97,6 +97,16 @@ describe('tokenize', () => {
     expect(g3?.children?.[0]).toMatchObject({ text: 'b', start: 5, end: 6 })
   })
 
+  it('treats [] and [^] as complete classes', () => {
+    expect(tokenize('[]a]').map((x) => x.text)).toEqual(['[]', 'a', ']'])
+    expect(tokenize('a[^]*b').map((x) => x.text)).toEqual(['a', '[^]*', 'b'])
+    expect(extractGroupLabels(tokenize('([^])(a)'))).toEqual(['Group 1', 'Group 2'])
+  })
+
+  it('keeps an escaped ] inside a class', () => {
+    expect(tokenize('[\\]a]b').map((x) => x.text)).toEqual(['[\\]a]', 'b'])
+  })
+
   it('extracts group labels in order', () => {
     expect(extractGroupLabels(tokenize('(a)(?<name>b)'))).toEqual([
       'Group 1',

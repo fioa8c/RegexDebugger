@@ -26,6 +26,11 @@ function atomText(t: Token): string {
   return t.quantifier ? t.text.slice(0, -t.quantifier.length) : t.text
 }
 
+function classEscape(esc: string): string {
+  if (esc === '\\b') return 'a backspace'
+  return META[esc] ?? CONTROL[esc] ?? `"${esc[1]}"`
+}
+
 function describeClass(text: string): string {
   const neg = text[1] === '^'
   let body = text.slice(neg ? 2 : 1)
@@ -34,26 +39,27 @@ function describeClass(text: string): string {
   let i = 0
   while (i < body.length) {
     if (body[i] === '\\' && i + 1 < body.length) {
-      parts.push(body[i + 1])
+      parts.push(classEscape(body.slice(i, i + 2)))
       i += 2
       continue
     }
     if (body[i + 1] === '-' && i + 2 < body.length) {
-      parts.push(body.slice(i, i + 3))
+      parts.push(`"${body.slice(i, i + 3)}"`)
       i += 3
       continue
     }
-    parts.push(body[i])
+    parts.push(`"${body[i]}"`)
     i++
   }
-  if (parts.length === 0) return 'an empty character class'
-  const quoted = parts.map((p) => `"${p}"`)
+  if (parts.length === 0) {
+    return neg ? 'any character, including line terminators' : 'an empty character class'
+  }
   const list =
-    quoted.length === 1
-      ? quoted[0]
-      : quoted.length === 2
-        ? `${quoted[0]} or ${quoted[1]}`
-        : quoted.slice(0, -1).join(', ') + ', or ' + quoted[quoted.length - 1]
+    parts.length === 1
+      ? parts[0]
+      : parts.length === 2
+        ? `${parts[0]} or ${parts[1]}`
+        : parts.slice(0, -1).join(', ') + ', or ' + parts[parts.length - 1]
   return neg ? `any character other than ${list}` : `one of ${list}`
 }
 
