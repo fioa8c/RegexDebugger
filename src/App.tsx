@@ -4,12 +4,17 @@ import { InputPane, SAMPLE_INPUT } from './components/InputPane'
 import { MatchList, type GroupLabel } from './components/MatchList'
 import { ExplanationPane } from './components/ExplanationPane'
 import { TokenReference } from './components/TokenReference'
+import { YaraWorkbench } from './components/yarax/YaraWorkbench'
 import { tokenize, flattenTokens, extractGroupLabels, type Token } from './lib/explain'
 import { runRegex, RegexError } from './lib/matcher'
 import { groupColor } from './lib/colors'
 import type { MatchInfo } from './lib/matcher'
 import type { Span } from './components/Highlighter'
+import { DEFAULT_YARA_OPTIONS } from './lib/yarax/engine'
+import { YARA_DEFAULT_PATTERN, YARA_SAMPLE_INPUT } from './lib/yarax/samples'
 import './index.css'
+
+type Flavor = 'javascript' | 'yarax'
 
 const DEFAULT_PATTERN = '([A-Z]+)\\s+(/\\S+)\\s+HTTP/(\\d\\.\\d)'
 
@@ -52,6 +57,10 @@ export default function App() {
   const [flags, setFlags] = useState('g')
   const [input, setInput] = useState(SAMPLE_INPUT)
   const [tab, setTab] = useState<'matches' | 'explain'>('matches')
+  const [flavor, setFlavor] = useState<Flavor>('javascript')
+  const [yPattern, setYPattern] = useState(YARA_DEFAULT_PATTERN)
+  const [yOpts, setYOpts] = useState(DEFAULT_YARA_OPTIONS)
+  const [yInput, setYInput] = useState(YARA_SAMPLE_INPUT)
 
   const onFlag = (f: string, on: boolean) =>
     setFlags((prev) => (on ? [...new Set(prev + f)].join('') : prev.replace(f, '')))
@@ -99,49 +108,68 @@ export default function App() {
           <span className="brand-mark">&lt;/&gt;</span>
           <span className="brand-name">regex101.clone</span>
         </div>
-        <div className="flavor">Flavor: JavaScript</div>
+        <label className="flavor">
+          Flavor
+          <select value={flavor} onChange={(e) => setFlavor(e.target.value as Flavor)}>
+            <option value="javascript">JavaScript</option>
+            <option value="yarax">Yara-X</option>
+          </select>
+        </label>
       </header>
 
-      <main className="main">
-        <PatternPane
-          pattern={pattern}
-          flags={flags}
-          spans={patternSpans}
-          error={error}
-          onPattern={setPattern}
-          onFlag={onFlag}
+      {flavor === 'yarax' ? (
+        <YaraWorkbench
+          pattern={yPattern}
+          opts={yOpts}
+          input={yInput}
+          onPattern={setYPattern}
+          onOpts={setYOpts}
+          onInput={setYInput}
         />
-        <InputPane input={input} spans={inputSpans} onInput={setInput} />
-      </main>
+      ) : (
+        <>
+          <main className="main">
+            <PatternPane
+              pattern={pattern}
+              flags={flags}
+              spans={patternSpans}
+              error={error}
+              onPattern={setPattern}
+              onFlag={onFlag}
+            />
+            <InputPane input={input} spans={inputSpans} onInput={setInput} />
+          </main>
 
-      <section className="results">
-        <div className="tabs">
-          <button
-            className={'tab' + (tab === 'matches' ? ' tab-on' : '')}
-            onClick={() => setTab('matches')}
-          >
-            Matches
-            <span className="tab-badge">
-              {error ? '!' : `${matches.length} in ${ms.toFixed(2)} ms`}
-            </span>
-          </button>
-          <button
-            className={'tab' + (tab === 'explain' ? ' tab-on' : '')}
-            onClick={() => setTab('explain')}
-          >
-            Explanation
-          </button>
-        </div>
-        <div className="results-body">
-          {tab === 'matches'
-            ? error
-              ? <div className="empty error-empty">{error}</div>
-              : <MatchList matches={matches} groupLabels={groupLabels} />
-            : <ExplanationPane tokens={tokens} flags={flags} />}
-        </div>
-      </section>
+          <section className="results">
+            <div className="tabs">
+              <button
+                className={'tab' + (tab === 'matches' ? ' tab-on' : '')}
+                onClick={() => setTab('matches')}
+              >
+                Matches
+                <span className="tab-badge">
+                  {error ? '!' : `${matches.length} in ${ms.toFixed(2)} ms`}
+                </span>
+              </button>
+              <button
+                className={'tab' + (tab === 'explain' ? ' tab-on' : '')}
+                onClick={() => setTab('explain')}
+              >
+                Explanation
+              </button>
+            </div>
+            <div className="results-body">
+              {tab === 'matches'
+                ? error
+                  ? <div className="empty error-empty">{error}</div>
+                  : <MatchList matches={matches} groupLabels={groupLabels} />
+                : <ExplanationPane tokens={tokens} flags={flags} />}
+            </div>
+          </section>
+        </>
+      )}
 
-      <TokenReference />
+      <TokenReference flavor={flavor} />
     </div>
   )
 }

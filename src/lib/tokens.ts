@@ -41,3 +41,25 @@ export const REFERENCE: ReferenceEntry[] = [
   { pattern: '\\n', description: 'a line feed' },
   { pattern: '\\t', description: 'a tab character' },
 ]
+
+export const YARAX_REFERENCE: ReferenceEntry[] = [
+  { pattern: '/.../i', description: 'case-insensitive (ASCII letters only)' },
+  { pattern: '/.../s', description: '. also matches \\n (any byte)' },
+  { pattern: '.', description: 'any byte except \\n' },
+  { pattern: '\\xFF', description: 'the raw byte 0xFF' },
+  { pattern: '\\x{E9}', description: 'a code point, matched as its UTF-8 bytes (C3 A9)' },
+  { pattern: '\\d \\w \\s', description: 'ASCII digit, word character, whitespace' },
+  { pattern: '[a-f0-9]', description: 'one byte from the set (ASCII only)' },
+  { pattern: '^ $', description: 'start / end of the data (of a line with (?m))' },
+  { pattern: '\\b \\B', description: 'ASCII word boundary / non-boundary' },
+  { pattern: 'a{n,m} a{,m}', description: 'between n and m times / at most m times' },
+  { pattern: '*? +? ??', description: "lazy; can't be mixed with greedy (E015)" },
+  { pattern: '(...)', description: 'a group; Yara-X never returns captures' },
+  { pattern: '(?i) (?s) (?m)', description: 'inline flags' },
+  { pattern: '\\/', description: 'a slash (must be escaped)' },
+  { pattern: 'nocase', description: 'case-insensitive (same as /i)' },
+  { pattern: 'wide', description: 'UTF-16LE: a 00 byte after each byte' },
+  { pattern: 'ascii wide', description: 'search both encodings' },
+  { pattern: 'fullword', description: 'no ASCII letter or digit right before or after' },
+  { pattern: 'unsupported', description: 'backreferences, lookaround, \\p{...}' },
+]
