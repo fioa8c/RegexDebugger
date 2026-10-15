@@ -1,4 +1,4 @@
-# regex101clone
+# Fio's Regex Debugger
 
 A regex101-style regular expression tester with two flavors: JavaScript, and **Yara-X**, which uses the real Yara-X engine compiled to WebAssembly. Type a pattern and some test text, and you get:
 

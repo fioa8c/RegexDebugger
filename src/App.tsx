@@ -120,7 +120,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">&lt;/&gt;</span>
-          <span className="brand-name">regex101.clone</span>
+          <span className="brand-name">Fio&apos;s Regex Debugger</span>
         </div>
         <label className="flavor">
           Flavor
