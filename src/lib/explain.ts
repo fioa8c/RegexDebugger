@@ -52,7 +52,7 @@ export function isLazy(q: string): boolean {
 export function groupModifiers(t: Token): { on: string; off: string } | null {
   if (t.type !== 'group-non') return null
   const m = MODIFIER_HEAD.exec(t.text)
-  if (!m || (m[1] === '' && m[2] === undefined)) return null
+  if (!m || (m[1] === '' && !m[2])) return null
   return { on: m[1], off: m[2] ?? '' }
 }
 

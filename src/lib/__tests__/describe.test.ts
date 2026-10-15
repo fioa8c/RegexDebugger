@@ -81,6 +81,10 @@ describe('describeToken', () => {
     expect(first('(?i:)')).toBe('an empty non-capturing group with case-insensitive (i) on')
   })
 
+  it('describes a modifier header with no letters as a plain non-capturing group', () => {
+    expect(first('(?-:a)')).toBe('a non-capturing group: matches "a"')
+  })
+
   it('describes atoms inside a modifier group with the flags in scope', () => {
     expect(first('(?s:.)')).toBe('a non-capturing group with dot-all (s) on: any character')
     expect(first('(?m:^)')).toBe('a non-capturing group with multiline (m) on: the start of a line')
