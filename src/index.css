@@ -35,7 +35,7 @@ body {
 }
 #root { display: flex; flex-direction: column; }
 
-.app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr auto; height: 100%; }
+.app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; }
 .topbar { grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-pane); }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { font-family: var(--mono); font-weight: 700; color: var(--accent); }
