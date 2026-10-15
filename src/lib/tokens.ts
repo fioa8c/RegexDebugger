@@ -57,6 +57,7 @@ export const YARAX_REFERENCE: ReferenceEntry[] = [
   { pattern: '(...)', description: 'a group; Yara-X never returns captures' },
   { pattern: '(?i) (?s) (?m)', description: 'inline flags' },
   { pattern: '\\/', description: 'a slash (must be escaped)' },
+  { pattern: '\\< \\>', description: 'literal < and > (not word boundaries)' },
   { pattern: 'nocase', description: 'case-insensitive (same as /i)' },
   { pattern: 'wide', description: 'UTF-16LE: a 00 byte after each byte' },
   { pattern: 'ascii wide', description: 'search both encodings' },
