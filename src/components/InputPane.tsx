@@ -11,16 +11,18 @@ export function InputPane({
   input,
   spans,
   onInput,
+  sample = SAMPLE_INPUT,
 }: {
   input: string
   spans: Span[]
   onInput: (v: string) => void
+  sample?: string
 }) {
   return (
     <section className="pane">
       <header className="pane-header">
         <span className="pane-title">Test String</span>
-        <button className="linkbtn" onClick={() => onInput(SAMPLE_INPUT)}>
+        <button className="linkbtn" onClick={() => onInput(sample)}>
           Reset
         </button>
       </header>

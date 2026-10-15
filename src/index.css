@@ -10,6 +10,8 @@
   --accent: #5b9cff;
   --error-fg: #ff7b72;
   --error-bg: #37202a;
+  --warn-fg: #ffd166;
+  --warn-bg: #2f2a1c;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -35,12 +37,17 @@ body {
 }
 #root { display: flex; flex-direction: column; }
 
-.app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr auto; height: 100%; }
+.app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; }
 .topbar { grid-column: 1 / span 2; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--bg-pane); }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-mark { font-family: var(--mono); font-weight: 700; color: var(--accent); }
 .brand-name { font-weight: 600; letter-spacing: 0.2px; color: var(--text-hi); font-size: 13px; opacity: 0.85; }
 .flavor { font-size: 12px; color: var(--text-dim); }
+.flavor select {
+  margin-left: 6px; padding: 3px 6px; border-radius: 6px;
+  background: var(--bg-code); color: var(--text-hi);
+  border: 1px solid var(--border); font: inherit;
+}
 
 .main { grid-column: 1 / span 2; display: grid; grid-template-columns: 1fr 1fr; min-height: 0; }
 .pane { display: flex; flex-direction: column; min-height: 260px; border-right: 1px solid var(--border); min-width: 0; }
@@ -189,3 +196,17 @@ body {
 .tok-named { color: #b388ff; font-weight: 700; }
 .tok-non { color: #b388ff; }
 .tok-look { color: #f07ab8; }
+
+.warnbox {
+  margin: 0; padding: 8px 12px;
+  background: var(--warn-bg); color: var(--warn-fg);
+  font: 12px/1.5 var(--mono);
+  border-top: 1px solid #4a3d1f;
+  white-space: pre-wrap;
+}
+.flag-sep { width: 1px; margin: 2px 4px; background: var(--border); }
+.hl-err { text-decoration: underline wavy var(--error-fg); text-underline-offset: 3px; }
+.hl-warn { text-decoration: underline wavy var(--warn-fg); text-underline-offset: 3px; }
+.ynum { width: 1%; white-space: nowrap; padding-right: 18px !important; }
+.yerr { white-space: pre-wrap; font-family: var(--mono); }
+.hint { margin-top: 6px; font-size: 12px; }
