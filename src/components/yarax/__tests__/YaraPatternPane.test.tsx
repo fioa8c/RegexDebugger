@@ -7,7 +7,7 @@ import { DEFAULT_YARA_OPTIONS } from '../../../lib/yarax/engine'
 afterEach(cleanup)
 
 describe('YaraPatternPane', () => {
-  it('describes every suffix and modifier toggle', () => {
+  it('describes every suffix and modifier toggle in a tooltip linked to its checkbox', () => {
     const { container } = render(
       <YaraPatternPane
         pattern="abc"
@@ -18,8 +18,10 @@ describe('YaraPatternPane', () => {
         onOpts={() => {}}
       />,
     )
-    const titles = [...container.querySelectorAll('label.flag')].map((l) => l.getAttribute('title'))
-    expect(titles).toEqual([
+    const boxes = [...container.querySelectorAll('input[type=checkbox]')]
+    const tips = boxes.map((b) => document.getElementById(b.getAttribute('aria-describedby') ?? '')?.textContent)
+    expect(container.querySelector('[title]')).toBeNull()
+    expect(tips).toEqual([
       'i suffix: case-insensitive (ASCII letters only)',
       's suffix: . also matches \\n (any byte)',
       'nocase: case-insensitive, same as the i suffix',

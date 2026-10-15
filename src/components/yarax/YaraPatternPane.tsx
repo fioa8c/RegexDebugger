@@ -1,17 +1,18 @@
 import { CodeArea } from '../CodeArea'
+import { Flag } from '../Flag'
 import type { Span } from '../Highlighter'
 import { formatDiag, type Diag, type YaraOptions } from '../../lib/yarax/engine'
 
 const SUFFIXES = [
-  { key: 'i', name: 'ignore case', title: 'i suffix: case-insensitive (ASCII letters only)' },
-  { key: 's', name: 'dot matches all', title: 's suffix: . also matches \\n (any byte)' },
+  { key: 'i', name: 'ignore case', tip: 'i suffix: case-insensitive (ASCII letters only)' },
+  { key: 's', name: 'dot matches all', tip: 's suffix: . also matches \\n (any byte)' },
 ] as const
 
 const MODIFIERS = [
-  { key: 'nocase', title: 'nocase: case-insensitive, same as the i suffix' },
-  { key: 'wide', title: 'wide: match UTF-16LE text (a 00 byte after each byte)' },
-  { key: 'ascii', title: 'ascii: match the plain bytes; with wide, search both encodings' },
-  { key: 'fullword', title: 'fullword: no ASCII letter or digit right before or after the match' },
+  { key: 'nocase', tip: 'nocase: case-insensitive, same as the i suffix' },
+  { key: 'wide', tip: 'wide: match UTF-16LE text (a 00 byte after each byte)' },
+  { key: 'ascii', tip: 'ascii: match the plain bytes; with wide, search both encodings' },
+  { key: 'fullword', tip: 'fullword: no ASCII letter or digit right before or after the match' },
 ] as const
 
 function diagSpans(diags: Diag[]): Span[] {
@@ -43,16 +44,15 @@ export function YaraPatternPane({
 }) {
   const error = errors.map(formatDiag).join('\n')
   const warning = warnings.map(formatDiag).join('\n')
-  const flag = (key: keyof YaraOptions, title: string, name?: string) => (
-    <label key={key} className={'flag' + (opts[key] ? ' flag-on' : '')} title={title}>
-      <input
-        type="checkbox"
-        checked={opts[key]}
-        onChange={(e) => onOpts({ ...opts, [key]: e.target.checked })}
-      />
-      <span className="flag-key">{key}</span>
-      {name && <span className="flag-name">{name}</span>}
-    </label>
+  const flag = (key: keyof YaraOptions, tip: string, name?: string) => (
+    <Flag
+      key={key}
+      label={key}
+      name={name}
+      tip={tip}
+      checked={opts[key]}
+      onChange={(on) => onOpts({ ...opts, [key]: on })}
+    />
   )
   return (
     <section className="pane">
@@ -70,9 +70,9 @@ export function YaraPatternPane({
       {error && <div className="errorbox">{error}</div>}
       {warning && <div className="warnbox">{warning}</div>}
       <footer className="flagbar">
-        {SUFFIXES.map((s) => flag(s.key, s.title, s.name))}
+        {SUFFIXES.map((s) => flag(s.key, s.tip, s.name))}
         <span className="flag-sep" aria-hidden />
-        {MODIFIERS.map((m) => flag(m.key, m.title))}
+        {MODIFIERS.map((m) => flag(m.key, m.tip))}
       </footer>
     </section>
   )

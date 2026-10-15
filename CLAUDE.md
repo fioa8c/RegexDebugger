@@ -21,6 +21,8 @@ A regex101-style regex tester with JavaScript and Yara-X flavors, built with Rea
 
 App state lives in `App.tsx`: the JavaScript flavor's `pattern`, `flags`, `input` and active tab, and the Yara-X flavor's pattern, options and input. For JavaScript, one `useMemo` derives everything else. For Yara-X, `useYaraScan` also holds the loaded engine and the last scan result. There is no router, store or context.
 
+**Layout:** `.app` is a grid sized by CSS variables (`--split`, `--main-h`, `--side-w`) that `App.tsx` sets from a `Layout` held in state. The state is persisted to `localStorage` by `lib/layout.ts`, which also holds the clamping math. Both flavors render through `components/Frame.tsx`, which places the panes and the three draggable `Splitter`s (pointer, arrow keys, double-click to reset). Toggles are `components/Flag.tsx`, with a `role="tooltip"` description linked by `aria-describedby`; don't use `title`.
+
 **Flavors:** `App.tsx` holds `flavor` (`'javascript' | 'yarax'`) and separate state for each flavor. The JavaScript UI is rendered inline. Yara-X renders `components/yarax/YaraWorkbench`, which receives its state from `App` so that switching flavors keeps it.
 
 **Yara-X engine** (`lib/yarax/engine.ts`): `loadEngine()` dynamically imports the official `@virustotal/yara-x` WebAssembly package, pinned exactly to `1.21.0`, and caches it. That is the only non-test import of the package, so it stays out of the main bundle. Vite rewrites the package's own `new URL('yara_x_js_bg.wasm', import.meta.url)` for dev and for the base-path build, so no Vite config is needed.
