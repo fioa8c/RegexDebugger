@@ -150,9 +150,62 @@ describe('runYara', () => {
     )
   })
 
-  it('reports an engine crash and keeps working afterwards', () => {
-    const r = runYara(mod, '\\b{start-half}a', opts(), 'a')
-    expect(r.errors.map((e) => e.code)).toEqual(['crash'])
+  it('reads a label whose text contains hyphens', () => {
+    const r = runYara(mod, '(?=a)', opts(), 'a')
+    expect(r.errors.map((e) => e.labels)).toEqual([
+      [{ text: 'look-around, including look-ahead and look-behind, is not supported', start: 0, end: 3 }],
+    ])
+    expect(formatDiag(r.errors[0])).toBe(
+      'E014: invalid regular expression — look-around, including look-ahead and look-behind, is not supported',
+    )
+  })
+
+  it('never sends patterns that crash Yara-X 1.21.0 to the engine', () => {
+    let compiled = 0
+    const spy: YaraModule = {
+      Compiler: class {
+        constructor() {
+          compiled++
+        }
+        addSource() {}
+        build(): never {
+          throw new Error('not reached')
+        }
+        readonly warnings: string[] = []
+        free() {}
+      },
+    }
+    for (const p of ['\\b{start-half}a', 'a\\b{end-half}', '(?u)\\w', 'x(?iu:.)', '(?u)[^a]']) {
+      expect(runYara(spy, p, opts(), 'a').errors.map((e) => e.code)).toEqual(['unsupported'])
+    }
+    expect(compiled).toBe(0)
+    expect(runYara(mod, '(?-u)a\\(\\?u\\)[(?u)]', opts(), 'a(?u))').matches).toEqual([{ offset: 0, length: 6 }])
+    expect(runYara(mod, '\\b{start}a', opts(), 'a').matches).toEqual([{ offset: 0, length: 1 }])
+  })
+
+  it('reports an engine crash and says how to recover', () => {
+    const crashing = (message: string): YaraModule => ({
+      Compiler: class {
+        addSource(): never {
+          throw new WebAssembly.RuntimeError(message)
+        }
+        build(): never {
+          throw new Error('not reached')
+        }
+        readonly warnings: string[] = []
+        free(): never {
+          throw new Error('a poisoned compiler must not be freed')
+        }
+      },
+    })
+    const r = runYara(crashing('unreachable'), 'abc', opts(), 'abc')
+    expect(r.errors.map((e) => [e.code, e.title])).toEqual([
+      [
+        'crash',
+        'the Yara-X engine crashed on this pattern (unreachable). ' +
+          'Each crash leaks engine memory; reload the page if valid patterns start failing',
+      ],
+    ])
     expect(runYara(mod, 'abc', opts(), 'abc').matches).toEqual([{ offset: 0, length: 3 }])
   })
 

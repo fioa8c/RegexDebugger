@@ -97,10 +97,11 @@ export function parseDiag(text: string, patternLen: number): Diag {
   const runs: { col: number; len: number; text: string | null }[] = []
   if (src >= 0 && src + 1 < lines.length) {
     const marks = lines[src + 1].slice(GUTTER)
-    for (const m of marks.matchAll(/[\^-]+/g)) {
+    const lead = /^[ ^-]*/.exec(marks)?.[0] ?? ''
+    for (const m of lead.matchAll(/[\^-]+/g)) {
       runs.push({ col: m.index, len: m[0].length, text: null })
     }
-    const after = marks.slice((runs.at(-1)?.col ?? 0) + (runs.at(-1)?.len ?? 0)).trim()
+    const after = marks.slice(lead.length).trim()
     if (runs.length && after) runs[runs.length - 1].text = after
     for (const line of lines.slice(src + 2)) {
       if (!line.startsWith('  |')) continue
@@ -121,7 +122,7 @@ export function parseDiag(text: string, patternLen: number): Diag {
   return diag
 }
 
-const LOCAL_CODES = new Set(['input', 'crash'])
+const LOCAL_CODES = new Set(['input', 'crash', 'unsupported'])
 
 export function formatDiag(d: Diag): string {
   const head = LOCAL_CODES.has(d.code) ? d.title : `${d.code}: ${d.title}`
@@ -138,7 +139,35 @@ export function hasUnescapedSlash(pattern: string): boolean {
   return false
 }
 
+export function knownCrash(pattern: string): string | null {
+  for (let i = 0; i < pattern.length; i++) {
+    if (pattern[i] === '\\') {
+      if (/^b\{(start|end)-half\}/.test(pattern.slice(i + 1))) return '`\\b{start-half}` and `\\b{end-half}`'
+      i++
+    } else if (pattern[i] === '[') {
+      let k = i + 1
+      if (pattern[k] === '^') k++
+      if (pattern[k] === ']') k++
+      while (k < pattern.length && pattern[k] !== ']') k += pattern[k] === '\\' ? 2 : 1
+      i = k
+    } else if (pattern.startsWith('(?', i)) {
+      const flags = /^\(\?([a-zA-Z]*)/.exec(pattern.slice(i))?.[1] ?? ''
+      if (flags.includes('u')) return 'Unicode mode `(?u)`'
+    }
+  }
+  return null
+}
+
 const SLASH_NOTE = 'Yara-X ends the regex at an unescaped `/`; write it as `\\/`'
+
+function crashed(e: unknown): EngineResult {
+  const text = e instanceof Error ? e.message : String(e)
+  return localError(
+    'crash',
+    `the Yara-X engine crashed on this pattern (${text}). ` +
+      'Each crash leaks engine memory; reload the page if valid patterns start failing',
+  )
+}
 
 function localError(code: string, title: string): EngineResult {
   return {
@@ -158,20 +187,25 @@ export function runYara(
   if (/[\r\n]/.test(pattern)) {
     return localError('input', 'a Yara-X regex must be on a single line')
   }
+  const crasher = knownCrash(pattern)
+  if (crasher) {
+    return localError(
+      'unsupported',
+      `${crasher} crashes Yara-X 1.21.0, so this tester doesn't send it to the engine`,
+    )
+  }
   const compiler = new mod.Compiler()
   try {
     compiler.addSource(buildRuleSource(pattern, opts))
   } catch (e) {
     const text = e instanceof Error ? e.message : String(e)
-    if (!/^error\[/.test(text)) {
-      return localError('crash', `the Yara-X engine crashed on this pattern (${text})`)
-    }
+    if (!/^error\[/.test(text)) return crashed(e)
     compiler.free()
     const diag = parseDiag(text, pattern.length)
     if (hasUnescapedSlash(pattern)) diag.notes.push(SLASH_NOTE)
     return { matches: [], errors: [diag], warnings: [] }
   }
-  let crashed = false
+  let poisoned = false
   try {
     const warnings = compiler.warnings.map((w) => parseDiag(w, pattern.length))
     const rules = compiler.build()
@@ -187,11 +221,10 @@ export function runYara(
       .sort((a, b) => a.offset - b.offset || a.length - b.length)
     return { matches, errors: [], warnings }
   } catch (e) {
-    crashed = true
-    const text = e instanceof Error ? e.message : String(e)
-    return localError('crash', `the Yara-X engine crashed on this pattern (${text})`)
+    poisoned = true
+    return crashed(e)
   } finally {
-    if (!crashed) compiler.free()
+    if (!poisoned) compiler.free()
   }
 }
 

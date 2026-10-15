@@ -26,7 +26,7 @@ All state lives in `App.tsx` (`pattern`, `flags`, `input`, active tab). One `use
 **Yara-X engine** (`lib/yarax/engine.ts`): `loadEngine()` dynamically imports the official `@virustotal/yara-x` WebAssembly package, pinned exactly to `1.21.0`, and caches it. That is the only non-test import of the package, so it stays out of the main bundle. Vite rewrites the package's own `new URL('yara_x_js_bg.wasm', import.meta.url)` for dev and for the base-path build, so no Vite config is needed.
 - `runYara` wraps the pattern as `rule t { strings: $a = /…/<is> <modifiers> condition: $a }`, scans the UTF-8 bytes, and returns byte offsets.
 - `parseDiag` turns the engine's formatted error and warning text into structured diagnostics. Label columns map back into the pattern by subtracting the rule prefix (24 characters) after the 4-character gutter.
-- After a panic, the thrown `Compiler` is poisoned, so never touch it again; a new one works.
+- After a panic, the thrown `Compiler` is poisoned, so never touch it again. A new one works, but each panic leaks wasm memory for good (about 18 MB for `(?u)\w`), and enough of them kill the engine until the page is reloaded. `knownCrash` therefore stops the known crashers (`\b{start-half}`, `\b{end-half}`, Unicode mode `(?u)`) before they reach the engine.
 - `lib/yarax/bytes.ts` maps byte offsets to string indices for the highlighter.
 - Tests load the engine with `initSync` and the `.wasm` from `node_modules`.
 
