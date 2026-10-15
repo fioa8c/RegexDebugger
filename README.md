@@ -63,13 +63,13 @@ Lint reports 2 existing `react(purity)` warnings in `src/App.tsx`. They are know
 
 By default, asset URLs are absolute from the site root (`/assets/...`). That works when the app is served at the root of a domain, like `https://regex.example.com/`.
 
-If you serve it from a subpath, like `https://<user>.github.io/REgex101Clone/`, pass the path at build time. Keep the leading and trailing slashes:
+If you serve it from a subpath, like `https://<user>.github.io/RegexDebugger/`, pass the path at build time. Keep the leading and trailing slashes:
 
 ```bash
-npm run build -- --base=/REgex101Clone/
+npm run build -- --base=/RegexDebugger/
 ```
 
-To make it permanent, set `base: '/REgex101Clone/'` in `vite.config.ts` instead. Without the right base, the page loads blank and the browser console shows 404s for `/assets/*.js`.
+To make it permanent, set `base: '/RegexDebugger/'` in `vite.config.ts` instead. Without the right base, the page loads blank and the browser console shows 404s for `/assets/*.js`.
 
 ### Netlify, Vercel or Cloudflare Pages
 
