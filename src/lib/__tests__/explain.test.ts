@@ -112,6 +112,24 @@ describe('tokenize', () => {
     expect(tokenize('[\\]a]b').map((x) => x.text)).toEqual(['[\\]a]', 'b'])
   })
 
+  it('tokenizes modifier groups as non-capturing', () => {
+    const t = tokenize('(?i:ab)+c')
+    expect(t.map((x) => x.text)).toEqual(['(?i:+', 'c'])
+    expect(t[0]).toMatchObject({ type: 'group-non', quantifier: '+', start: 0, end: 8 })
+    expect(t[0].children?.map((c) => [c.text, c.start])).toEqual([['a', 4], ['b', 5]])
+    expect(tokenize('(?i-ms:x)')[0]).toMatchObject({ type: 'group-non', text: '(?i-ms:' })
+    expect(tokenize('(?-s:x)')[0]).toMatchObject({ type: 'group-non', text: '(?-s:' })
+  })
+
+  it('does not count modifier groups as captures', () => {
+    expect(extractGroupLabels(tokenize('(?i:a)(b)'))).toEqual(['Group 1'])
+    expect(extractGroupLabels(tokenize('(?i:(a)|(?<n>b))(c)'))).toEqual([
+      'Group 1',
+      'n',
+      'Group 3',
+    ])
+  })
+
   it('extracts group labels in order', () => {
     expect(extractGroupLabels(tokenize('(a)(?<name>b)'))).toEqual([
       'Group 1',

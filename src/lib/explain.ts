@@ -42,6 +42,8 @@ const QUANTIFIABLE = new Set<TokenType>([
   'group-lookbehind',
 ])
 
+const MODIFIER_HEAD = /^\(\?([ims]*)(?:-([ims]*))?:/
+
 export function isLazy(q: string): boolean {
   return q.length > 1 && q.endsWith('?')
 }
@@ -101,6 +103,8 @@ function groupHeader(src: string, i: number): { type: TokenType; len: number } {
       while (j < src.length && src[j] !== '>') j++
       return { type: 'group-named', len: j - i + 1 }
     }
+    const mod = MODIFIER_HEAD.exec(src.slice(i, i + 10))
+    if (mod) return { type: 'group-non', len: mod[0].length }
   }
   return { type: 'group-start', len: 1 }
 }

@@ -20,6 +20,7 @@ export const REFERENCE: ReferenceEntry[] = [
   { pattern: '(?:...)', description: 'a non-capturing group' },
   { pattern: '(...)', description: 'a capturing group' },
   { pattern: '(?<name>...)', description: 'a named capturing group' },
+  { pattern: '(?i:...)', description: 'case-insensitive inside the group only' },
   { pattern: '(?=...)', description: 'positive lookahead' },
   { pattern: '(?!...)', description: 'negative lookahead' },
   { pattern: '(?<=...)', description: 'positive lookbehind' },

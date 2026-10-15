@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { runRegex } from '../matcher'
+import { tokenize, extractGroupLabels } from '../explain'
 
 describe('runRegex', () => {
   it('returns no matches for empty pattern', () => {
@@ -72,5 +73,13 @@ describe('runRegex', () => {
 
   it('reports offsets alongside other flags', () => {
     expect(runRegex('(b)', 'gimsu', 'aBab', 1).map((m) => m.groups[0].offset)).toEqual([1, 3])
+  })
+
+  it('gives a modifier-group pattern one column per real capture', () => {
+    const p = '(?i:a)(?<x>b)'
+    const labels = extractGroupLabels(tokenize(p))
+    expect(labels).toEqual(['x'])
+    const r = runRegex(p, '', 'Ab', labels.length)
+    expect(r[0].groups.map((g) => g.value)).toEqual(['b'])
   })
 })
