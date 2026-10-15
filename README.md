@@ -1,13 +1,13 @@
 # regex101clone
 
-A regex101-style regular expression tester for the JavaScript regex flavor. Type a pattern and some test text, and you get:
+A regex101-style regular expression tester with two flavors: JavaScript, and **Yara-X**, which uses the real Yara-X engine compiled to WebAssembly. Type a pattern and some test text, and you get:
 
 - matches and capture groups highlighted live in the text,
 - a match table with one column per capture group,
 - a plain-English explanation of the pattern,
 - a token cheat sheet.
 
-Everything runs in the browser with the native `RegExp` engine. There is no backend, so the production build is a static site you can host anywhere.
+Everything runs in the browser. The JavaScript flavor uses the browser's native `RegExp`, and the Yara-X flavor uses the official `@virustotal/yara-x` WebAssembly build. There is no backend, so the production build is a static site you can host anywhere.
 
 Built with React 19, Vite 8 and TypeScript 6.
 
@@ -58,6 +58,8 @@ Lint reports 2 existing `react(purity)` warnings in `src/App.tsx`. They are know
 ## Deploy
 
 `npm run build` writes a self-contained static site to `dist/`: an `index.html`, a favicon, and hashed JS and CSS files under `assets/`. It's about 250 KB, or 75 KB gzipped. Upload that folder to any static host. You don't need a server runtime, environment variables, or SPA rewrite rules, because the app is a single page with no client-side routes.
+
+The Yara-X engine is a separate, roughly 6 MB WebAssembly file (about 2 MB gzipped) in `assets/`. It's downloaded only when someone switches to the Yara-X flavor. Static hosts should serve `.wasm` as `application/wasm` (GitHub Pages, Netlify, Vercel and Cloudflare Pages do); otherwise the browser falls back to a slower load and logs a console warning.
 
 ### Base path
 

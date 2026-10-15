@@ -2,14 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-A regex101-style regex tester (JavaScript flavor only), built with React + Vite. See `AGENTS.md` for stack, the command table, and the pre-commit order (typecheck → lint → test).
+A regex101-style regex tester with JavaScript and Yara-X flavors, built with React + Vite. See `AGENTS.md` for stack, the command table, and the pre-commit order (typecheck → lint → test).
 
 ## Commands not in AGENTS.md
 - Single test file: `npx vitest run src/lib/__tests__/matcher.test.ts`
 - Single test by name: `npx vitest run -t "captures group values"`
+- Yara-X engine tests only: `npx vitest run src/lib/yarax`
 
 ## Corrections to AGENTS.md
-- Vitest runs in its default **node** environment, not jsdom. There is no `vitest.config.*` and no `test` block in `vite.config.ts`. `jsdom` and `@testing-library/*` are installed but unused. All tests are pure-logic tests in `src/lib/__tests__/`. To test components, add `test: { environment: 'jsdom' }` or a per-file `// @vitest-environment jsdom` comment.
+- Vitest runs in its default **node** environment, not jsdom. There is no `vitest.config.*` and no `test` block in `vite.config.ts`. `jsdom` and `@testing-library/*` are installed but unused. All tests are pure-logic tests in `src/lib/__tests__/` and `src/lib/yarax/__tests__/`. To test components, add `test: { environment: 'jsdom' }` or a per-file `// @vitest-environment jsdom` comment.
 - The Vite template assets are already gone. `src/assets/` does not exist.
 - `index.css` defines a single dark palette in `:root`. There is no light theme or `prefers-color-scheme` switch.
 
@@ -19,6 +20,15 @@ A regex101-style regex tester (JavaScript flavor only), built with React + Vite.
 ## Architecture
 
 All state lives in `App.tsx` (`pattern`, `flags`, `input`, active tab). One `useMemo` derives everything else. There is no router, store or context.
+
+**Flavors:** `App.tsx` holds `flavor` (`'javascript' | 'yarax'`) and separate state for each flavor. The JavaScript UI is rendered inline. Yara-X renders `components/yarax/YaraWorkbench`, which receives its state from `App` so that switching flavors keeps it.
+
+**Yara-X engine** (`lib/yarax/engine.ts`): `loadEngine()` dynamically imports the official `@virustotal/yara-x` WebAssembly package, pinned exactly to `1.21.0`, and caches it. That is the only non-test import of the package, so it stays out of the main bundle. Vite rewrites the package's own `new URL('yara_x_js_bg.wasm', import.meta.url)` for dev and for the base-path build, so no Vite config is needed.
+- `runYara` wraps the pattern as `rule t { strings: $a = /…/<is> <modifiers> condition: $a }`, scans the UTF-8 bytes, and returns byte offsets.
+- `parseDiag` turns the engine's formatted error and warning text into structured diagnostics. Label columns map back into the pattern by subtracting the rule prefix (24 characters) after the 4-character gutter.
+- After a panic, the thrown `Compiler` is poisoned, so never touch it again; a new one works.
+- `lib/yarax/bytes.ts` maps byte offsets to string indices for the highlighter.
+- Tests load the engine with `initSync` and the `.wasm` from `node_modules`.
 
 **Two independent regex systems that must agree:**
 - `lib/explain.ts`: a hand-written recursive tokenizer used for syntax coloring, the explanation, and group labels. Group tokens carry `children`, re-offset to **absolute** positions in the full pattern. Quantifiers (`*`, `+`, `?`, `{n,m}`, lazy `?`) are folded into the preceding token's `text`/`end` and recorded in its `quantifier` field. They become a standalone `quantifier` token only when nothing quantifiable precedes them.
