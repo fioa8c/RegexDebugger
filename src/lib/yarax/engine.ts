@@ -264,12 +264,18 @@ export function runYara(
 }
 
 let loading: Promise<YaraModule> | null = null
+let loaded: YaraModule | null = null
+
+export function loadedEngine(): YaraModule | null {
+  return loaded
+}
 
 export function loadEngine(): Promise<YaraModule> {
   if (!loading) {
     loading = import('@virustotal/yara-x').then(async (mod) => {
       await mod.default()
-      return mod as unknown as YaraModule
+      loaded = mod as unknown as YaraModule
+      return loaded
     })
     loading.catch(() => {
       loading = null
