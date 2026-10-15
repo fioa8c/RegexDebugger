@@ -2,7 +2,7 @@ import { describeToken } from '../lib/describe'
 import { flattenTokens, type Token } from '../lib/explain'
 
 export function ExplanationPane({ tokens, flags }: { tokens: Token[]; flags: string }) {
-  const flat = flattenTokens(tokens)
+  const flat = flattenTokens(tokens, flags)
   if (flat.length === 0) {
     return <div className="empty">Enter a regular expression to see its explanation.</div>
   }
@@ -30,7 +30,7 @@ export function ExplanationPane({ tokens, flags }: { tokens: Token[]; flags: str
             <li key={i} className="expl group">
               <span className="expl-text group-open">
                 <span style={{ paddingLeft: `${ft.depth * 14}px` }}>
-                  {describeToken(t, flags)}:
+                  {describeToken(t, ft.flags)}:
                 </span>
               </span>
             </li>
@@ -40,7 +40,7 @@ export function ExplanationPane({ tokens, flags }: { tokens: Token[]; flags: str
         return (
           <li key={i} className="expl">
             <span className="expl-text" style={{ paddingLeft: `${ft.depth * 14}px` }}>
-              {describeToken(t, flags)}
+              {describeToken(t, ft.flags)}
             </span>
           </li>
         )

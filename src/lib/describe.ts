@@ -1,4 +1,4 @@
-import { isLazy, type Token } from './explain'
+import { groupModifiers, isLazy, scopedFlags, type Token } from './explain'
 
 const CONTROL: Record<string, string> = {
   '\\n': 'a line feed',
@@ -16,6 +16,25 @@ const META: Record<string, string> = {
   '\\W': 'any non-word character',
   '\\s': 'a whitespace character',
   '\\S': 'any non-whitespace character',
+}
+
+const MODIFIER_NAME: Record<string, string> = {
+  i: 'case-insensitive (i)',
+  m: 'multiline (m)',
+  s: 'dot-all (s)',
+}
+
+function joinList(parts: string[], conj: 'and' | 'or'): string {
+  if (parts.length <= 2) return parts.join(` ${conj} `)
+  return parts.slice(0, -1).join(', ') + `, ${conj} ` + parts[parts.length - 1]
+}
+
+function modifierPhrase(mod: { on: string; off: string }): string {
+  const names = (fs: string) => joinList([...fs].map((f) => MODIFIER_NAME[f]), 'and')
+  const parts: string[] = []
+  if (mod.on) parts.push(`${names(mod.on)} on`)
+  if (mod.off) parts.push(`${names(mod.off)} off`)
+  return parts.join(', ')
 }
 
 function unesc(s: string): string {
@@ -66,12 +85,7 @@ function describeClass(text: string): string {
   if (parts.length === 0) {
     return neg ? 'any character, including line terminators' : 'an empty character class'
   }
-  const list =
-    parts.length === 1
-      ? parts[0]
-      : parts.length === 2
-        ? `${parts[0]} or ${parts[1]}`
-        : parts.slice(0, -1).join(', ') + ', or ' + parts[parts.length - 1]
+  const list = joinList(parts, 'or')
   return neg ? `any character other than ${list}` : `one of ${list}`
 }
 
@@ -136,7 +150,8 @@ function baseAtom(t: Token, flags: string): string {
 
 export function describeToken(t: Token, flags = ''): string {
   if (t.type.startsWith('group-')) {
-    const inner = (t.children ?? []).map((c) => describeToken(c, flags)).join(' ')
+    const childFlags = scopedFlags(flags, t)
+    const inner = (t.children ?? []).map((c) => describeToken(c, childFlags)).join(' ')
     const name = t.text.match(/\(\?<([a-zA-Z_$][a-zA-Z0-9_$]*)>/)?.[1]
     let label = ''
     if (t.type === 'group-start') {
@@ -146,7 +161,9 @@ export function describeToken(t: Token, flags = ''): string {
         ? `a named capturing group "${name ?? ''}": ${inner}`
         : `an empty named group "${name ?? ''}"`
     } else if (t.type === 'group-non') {
-      label = inner ? `a non-capturing group: ${inner}` : 'an empty non-capturing group'
+      const mod = groupModifiers(t)
+      const kind = mod ? `non-capturing group with ${modifierPhrase(mod)}` : 'non-capturing group'
+      label = inner ? `a ${kind}: ${inner}` : `an empty ${kind}`
     } else {
       const ahead = t.type === 'group-lookahead'
       const neg = t.text.startsWith(ahead ? '(?!' : '(?<!')

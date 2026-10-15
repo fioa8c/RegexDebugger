@@ -26,6 +26,7 @@ export interface Token {
 export interface FlatToken {
   token: Token
   depth: number
+  flags: string
 }
 
 const QUANTIFIABLE = new Set<TokenType>([
@@ -46,6 +47,20 @@ const MODIFIER_HEAD = /^\(\?([ims]*)(?:-([ims]*))?:/
 
 export function isLazy(q: string): boolean {
   return q.length > 1 && q.endsWith('?')
+}
+
+export function groupModifiers(t: Token): { on: string; off: string } | null {
+  if (t.type !== 'group-non') return null
+  const m = MODIFIER_HEAD.exec(t.text)
+  if (!m || (m[1] === '' && m[2] === undefined)) return null
+  return { on: m[1], off: m[2] ?? '' }
+}
+
+export function scopedFlags(flags: string, t: Token): string {
+  const mod = groupModifiers(t)
+  if (!mod) return flags
+  const kept = [...flags].filter((f) => !mod.off.includes(f)).join('')
+  return kept + [...mod.on].filter((f) => !kept.includes(f)).join('')
 }
 
 function shift(t: Token, by: number): Token {
@@ -232,15 +247,15 @@ export function tokenize(pattern: string): Token[] {
   return out
 }
 
-export function flattenTokens(tokens: Token[]): FlatToken[] {
+export function flattenTokens(tokens: Token[], flags = ''): FlatToken[] {
   const out: FlatToken[] = []
-  const walk = (ts: Token[], depth: number): void => {
+  const walk = (ts: Token[], depth: number, fl: string): void => {
     for (const t of ts) {
-      out.push({ token: t, depth })
-      if (t.children) walk(t.children, depth + 1)
+      out.push({ token: t, depth, flags: fl })
+      if (t.children) walk(t.children, depth + 1, scopedFlags(fl, t))
     }
   }
-  walk(tokens, 0)
+  walk(tokens, 0, flags)
   return out
 }
 

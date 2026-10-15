@@ -61,6 +61,17 @@ describe('tokenize', () => {
     expect(types).toEqual(['anchor', 'literal', 'alt', 'literal', 'anchor'])
   })
 
+  it('carries modifier-scoped flags into flattened children', () => {
+    const t = flattenTokens(tokenize('^(?m-s:^.)$'), 's')
+    expect(t.map((x) => [x.token.text, x.flags])).toEqual([
+      ['^', 's'],
+      ['(?m-s:', 's'],
+      ['^', 'm'],
+      ['.', 'm'],
+      ['$', 's'],
+    ])
+  })
+
   it('tokenizes capturing group with children', () => {
     const t = tokenize('(ab)+')
     expect(t).toHaveLength(1)

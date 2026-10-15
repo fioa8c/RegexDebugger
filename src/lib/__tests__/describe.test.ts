@@ -62,6 +62,37 @@ describe('describeToken', () => {
     expect(first('(?<=a)')).toBe('a lookbehind: the input must be preceded by matches "a"')
   })
 
+  it('describes modifier groups', () => {
+    expect(first('(?i:ab)')).toBe(
+      'a non-capturing group with case-insensitive (i) on: matches "a" matches "b"',
+    )
+    expect(first('(?-i:a)')).toBe(
+      'a non-capturing group with case-insensitive (i) off: matches "a"',
+    )
+    expect(first('(?is-m:a)')).toBe(
+      'a non-capturing group with case-insensitive (i) and dot-all (s) on, multiline (m) off: matches "a"',
+    )
+    expect(first('(?ims:a)')).toBe(
+      'a non-capturing group with case-insensitive (i), multiline (m), and dot-all (s) on: matches "a"',
+    )
+    expect(first('(?i:ab)+')).toBe(
+      'a non-capturing group with case-insensitive (i) on: matches "a" matches "b", one or more times',
+    )
+    expect(first('(?i:)')).toBe('an empty non-capturing group with case-insensitive (i) on')
+  })
+
+  it('describes atoms inside a modifier group with the flags in scope', () => {
+    expect(first('(?s:.)')).toBe('a non-capturing group with dot-all (s) on: any character')
+    expect(first('(?m:^)')).toBe('a non-capturing group with multiline (m) on: the start of a line')
+    expect(describeToken(tokenize('(?-m:$)')[0], 'm')).toBe(
+      'a non-capturing group with multiline (m) off: the end of the string',
+    )
+    expect(first('(?m:^(?-m:^))')).toBe(
+      'a non-capturing group with multiline (m) on: the start of a line ' +
+        'a non-capturing group with multiline (m) off: the start of the string',
+    )
+  })
+
   it('describes negative lookarounds', () => {
     expect(first('(?!a)')).toBe(
       'a negative lookahead: the input must not be followed by matches "a"',
