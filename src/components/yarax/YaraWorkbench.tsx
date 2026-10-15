@@ -74,7 +74,12 @@ export function YaraWorkbench({
           {scan.status === 'loading' ? (
             <div className="empty">Loading the Yara-X engine…</div>
           ) : scan.status === 'unavailable' ? (
-            <div className="empty error-empty">Yara-X engine unavailable: {scan.reason}</div>
+            <div className="empty error-empty">
+              Yara-X engine unavailable: {scan.reason}{' '}
+              <button className="linkbtn" onClick={scan.retry}>
+                Retry
+              </button>
+            </div>
           ) : errors.length ? (
             <div className="empty error-empty yerr">{errors.map(formatDiag).join('\n')}</div>
           ) : (

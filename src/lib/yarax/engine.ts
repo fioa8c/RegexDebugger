@@ -77,9 +77,35 @@ export function buildRuleSource(pattern: string, opts: YaraOptions): string {
   return `${RULE_PREFIX}${pattern}/${suffix}${mods} condition: $a }`
 }
 
-function patternRange(col: number, len: number, patternLen: number): [number, number] | null {
-  const start = Math.max(col - RULE_PREFIX.length, 0)
-  const end = Math.min(col + len - RULE_PREFIX.length, patternLen)
+const WIDE =
+  /[\u1100-\u115F\u2E80-\u303E\u3041-\u33FF\u3400-\u4DBF\u4E00-\u9FFF\uA000-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6\u{20000}-\u{3FFFD}]|\p{Emoji_Presentation}/u
+const ZERO_WIDTH = /[\p{Mn}\p{Me}\p{Cf}]/u
+
+function charWidth(ch: string): number {
+  if (ZERO_WIDTH.test(ch)) return 0
+  return WIDE.test(ch) ? 2 : 1
+}
+
+function columnIndex(line: string, col: number): number {
+  let width = 0
+  let index = 0
+  for (const ch of line) {
+    const w = charWidth(ch)
+    if (width >= col && w > 0) break
+    width += w
+    index += ch.length
+  }
+  return index
+}
+
+function patternRange(
+  line: string,
+  col: number,
+  len: number,
+  patternLen: number,
+): [number, number] | null {
+  const start = Math.max(columnIndex(line, col) - RULE_PREFIX.length, 0)
+  const end = Math.min(columnIndex(line, col + len) - RULE_PREFIX.length, patternLen)
   return start < end ? [start, end] : null
 }
 
@@ -107,12 +133,17 @@ export function parseDiag(text: string, patternLen: number): Diag {
       if (!line.startsWith('  |')) continue
       const body = line.slice(GUTTER)
       const col = body.search(/\S/)
-      const run = runs.find((r) => r.col === col && r.text === null)
-      if (run && body[col] !== '|') run.text = body.slice(col).trim()
+      if (col < 0 || body[col] === '|') continue
+      const text = body.slice(col).trim()
+      const open = runs.find((r) => r.col === col && r.text === null)
+      const taken = runs.findIndex((r) => r.col === col)
+      if (open) open.text = text
+      else if (taken >= 0) runs.splice(taken + 1, 0, { ...runs[taken], text })
     }
   }
+  const source = src >= 0 ? lines[src].slice(GUTTER) : ''
   for (const r of runs) {
-    const range = patternRange(r.col, r.len, patternLen)
+    const range = patternRange(source, r.col, r.len, patternLen)
     diag.labels.push({ text: r.text ?? '', start: range?.[0] ?? null, end: range?.[1] ?? null })
   }
   for (const line of lines) {
@@ -187,6 +218,7 @@ export function runYara(
   if (/[\r\n]/.test(pattern)) {
     return localError('input', 'a Yara-X regex must be on a single line')
   }
+  if (hasUnescapedSlash(pattern)) return localError('input', SLASH_NOTE)
   const crasher = knownCrash(pattern)
   if (crasher) {
     return localError(
@@ -201,19 +233,17 @@ export function runYara(
     const text = e instanceof Error ? e.message : String(e)
     if (!/^error\[/.test(text)) return crashed(e)
     compiler.free()
-    const diag = parseDiag(text, pattern.length)
-    if (hasUnescapedSlash(pattern)) diag.notes.push(SLASH_NOTE)
-    return { matches: [], errors: [diag], warnings: [] }
+    return { matches: [], errors: [parseDiag(text, pattern.length)], warnings: [] }
   }
-  let poisoned = false
+  const owned: { free(): void }[] = [compiler]
   try {
     const warnings = compiler.warnings.map((w) => parseDiag(w, pattern.length))
     const rules = compiler.build()
+    owned.push(rules)
     const scanner = rules.scanner()
+    owned.push(scanner)
     scanner.setMaxMatchesPerPattern(MAX_MATCHES)
     const result = scanner.scan(new TextEncoder().encode(input))
-    scanner.free()
-    rules.free()
     const matches = result.matches
       .flatMap((r) => r.patterns)
       .flatMap((p) => p.matches)
@@ -221,20 +251,31 @@ export function runYara(
       .sort((a, b) => a.offset - b.offset || a.length - b.length)
     return { matches, errors: [], warnings }
   } catch (e) {
-    poisoned = true
     return crashed(e)
   } finally {
-    if (!poisoned) compiler.free()
+    for (const o of owned.reverse()) {
+      try {
+        o.free()
+      } catch {
+        // an object the crash left unusable can't be freed; skip it
+      }
+    }
   }
 }
 
 let loading: Promise<YaraModule> | null = null
+let loaded: YaraModule | null = null
+
+export function loadedEngine(): YaraModule | null {
+  return loaded
+}
 
 export function loadEngine(): Promise<YaraModule> {
   if (!loading) {
     loading = import('@virustotal/yara-x').then(async (mod) => {
       await mod.default()
-      return mod as unknown as YaraModule
+      loaded = mod as unknown as YaraModule
+      return loaded
     })
     loading.catch(() => {
       loading = null

@@ -209,12 +209,75 @@ describe('runYara', () => {
     expect(runYara(mod, 'abc', opts(), 'abc').matches).toEqual([{ offset: 0, length: 3 }])
   })
 
-  it('explains an unescaped slash, which ends the regex early', () => {
-    const r = runYara(mod, 'a/b', opts(), 'a/b')
-    expect(r.errors.map((e) => [e.code, e.notes])).toEqual([
-      ['E001', ['Yara-X ends the regex at an unescaped `/`; write it as `\\/`']],
-    ])
+  it('rejects an unescaped slash before the engine can read past it', () => {
+    let compiled = 0
+    const spy: YaraModule = {
+      Compiler: class {
+        constructor() {
+          compiled++
+        }
+        addSource() {}
+        build(): never {
+          throw new Error('not reached')
+        }
+        readonly warnings: string[] = []
+        free() {}
+      },
+    }
+    for (const p of ['a/b', 'a/ condition: $a } //']) {
+      expect(runYara(spy, p, opts(), 'a').errors.map((e) => [e.code, e.title])).toEqual([
+        ['input', 'Yara-X ends the regex at an unescaped `/`; write it as `\\/`'],
+      ])
+    }
+    expect(compiled).toBe(0)
     expect(runYara(mod, 'a\\/b', opts(), 'xa/b').matches).toEqual([{ offset: 1, length: 3 }])
+  })
+
+  it('frees the scanner, rules and compiler when the scan crashes', () => {
+    const freed: string[] = []
+    const stub: YaraModule = {
+      Compiler: class {
+        addSource() {}
+        build() {
+          return {
+            scanner: () => ({
+              setMaxMatchesPerPattern() {},
+              scan(): never {
+                throw new WebAssembly.RuntimeError('unreachable')
+              },
+              free: () => freed.push('scanner'),
+            }),
+            free: () => freed.push('rules'),
+          }
+        }
+        readonly warnings: string[] = []
+        free() {
+          freed.push('compiler')
+        }
+      },
+    }
+    expect(runYara(stub, 'abc', opts(), 'abc').errors.map((e) => e.code)).toEqual(['crash'])
+    expect(freed).toEqual(['scanner', 'rules', 'compiler'])
+  })
+
+  it('maps underlines past wide and zero-width characters', () => {
+    const at = (p: string) => runYara(mod, p, opts(), '').errors[0].labels[0]
+    expect(at('漢字(')).toEqual({ text: 'unclosed group', start: 2, end: 3 })
+    expect(at('ａ(')).toEqual({ text: 'unclosed group', start: 1, end: 2 })
+    expect(at('e\u0301(')).toEqual({ text: 'unclosed group', start: 2, end: 3 })
+    expect(at('😀(')).toEqual({ text: 'unclosed group', start: 2, end: 3 })
+    expect(at('é(')).toEqual({ text: 'unclosed group', start: 1, end: 2 })
+  })
+
+  it('keeps both labels when two start at the same column', () => {
+    expect(runYara(mod, 'a+?b*', opts(), '').errors[0].labels).toEqual([
+      { text: 'this is greedy', start: 0, end: 5 },
+      { text: 'this is non-greedy', start: 0, end: 5 },
+    ])
+    expect(runYara(mod, '(a+?)b*', opts(), '').errors[0].labels).toEqual([
+      { text: 'this is non-greedy', start: 1, end: 4 },
+      { text: 'this is greedy', start: 5, end: 7 },
+    ])
   })
 
   it('finds nothing with wide alone in pasted text, and the plain bytes with ascii wide', () => {
