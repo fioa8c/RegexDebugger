@@ -42,6 +42,14 @@ describe('assessCost', () => {
     expect(cost('foo.{0,10}barz', { wide: true })).toMatchObject({ backward: { bytes: 26 }, forward: { bytes: 8 } })
   })
 
+  it('verifies wide literals, whose searched atoms are inexact', () => {
+    expect(cost('abc', { wide: true }).tier).toBe('compare')
+  })
+
+  it("scores wide patterns on their own bytes, not wide's interleaved 00s", () => {
+    expect(cost('MaliciousPayloadDomain', { wide: true })).toMatchObject({ grade: 'fast', weakest: 80, wide: true })
+  })
+
   it('marks chained patterns', () => {
     expect(cost('abcd.{0,300}efgh', { s: true }).chained).toBe(true)
   })

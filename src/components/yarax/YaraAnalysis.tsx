@@ -64,7 +64,7 @@ function Verification({ pieces, pattern }: { pieces: Piece[]; pattern: string })
     <ul className="ya-list">
       {pieces.map((p, i) => {
         const label = pieces.length > 1 ? `piece ${i + 1} (${TIER_LABEL[pieceTier(p)]}): ` : ''
-        if (p.atoms.every((a) => a.exact && a.bytes.length > 0)) {
+        if (pieceTier(p) === 'exact') {
           return <li key={i}>{label}the atoms cover the whole pattern; nothing is verified</li>
         }
         // Forward verification starts at the atom's first byte (see extentAt).
@@ -127,7 +127,8 @@ export function YaraAnalysis({
         <span className="ya-dim">({slowSource})</span>
       </h3>
       <div className="ya-nums">
-        weakest atom {cost.weakest}/{MAX_QUALITY} · avg {Math.round(cost.average)} · {cost.count.toLocaleString('en-US')} atom
+        weakest atom {cost.weakest}/{MAX_QUALITY}
+        {cost.wide ? " (without wide's 00 bytes)" : ''} · avg {Math.round(cost.average)} · {cost.count.toLocaleString('en-US')} atom
         {cost.count === 1 ? '' : 's'} · min length {cost.minLength} B · verify: {TIER_LABEL[cost.tier]}
       </div>
       <div className="ya-nums">

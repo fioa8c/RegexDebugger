@@ -3,7 +3,7 @@
 // own slow_pattern rule; Fast/OK is this tester's heuristic, tuned by the
 // two constants below.
 
-import type { AtomResult, Extent, Piece } from './atoms'
+import type { Atom, AtomResult, Extent, Piece } from './atoms'
 import { minOf } from './literal'
 import { atomQuality } from './quality'
 
@@ -44,6 +44,10 @@ export interface Cost {
   backward: Reach
   forward: Reach
   chained: boolean
+  // With `wide`, the quality numbers score the pattern's own atoms: the
+  // 00 bytes wide interleaves would cap every atom below Fast, and the
+  // pattern can't change them.
+  wide: boolean
   // The slow_pattern verdict of this port and of the engine (null until
   // the engine has answered).
   portSlow: boolean
@@ -51,8 +55,13 @@ export interface Cost {
   drift: boolean
 }
 
+const isExact = (a: Atom) => a.exact && a.bytes.length > 0
+
+// Exact only if every atom actually searched is (a wide literal's atom is
+// a window of the UTF-16 bytes, so it still needs verifying).
 export function pieceTier(p: Piece): Tier {
-  if (p.atoms.length > 0 && p.atoms.every((a) => a.exact && a.bytes.length > 0)) return 'exact'
+  const exact = p.searched.length ? p.searched.every((s) => isExact(s.atom)) : p.atoms.length > 0 && p.atoms.every(isExact)
+  if (exact) return 'exact'
   if (p.path === 'literal') return 'compare'
   if (p.path === 'masked') return 'masked'
   if (p.path === 'fast') return 'fastvm'
@@ -74,10 +83,11 @@ function widest(a: Reach, b: Reach): Reach {
 }
 
 export function assessCost(r: AtomResult, wide: boolean, engineSlow: boolean | null): Cost {
-  const qualities = r.all.map((a) => Math.max(0, atomQuality(a.bytes)))
+  const scored = wide ? r.pieces.flatMap((p) => p.atoms) : r.all
+  const qualities = scored.map((a) => Math.max(0, atomQuality(a.bytes)))
   const weakest = qualities.length ? minOf(qualities) : 0
   const average = qualities.length ? qualities.reduce((n, q) => n + q, 0) / qualities.length : 0
-  const minLength = r.all.length ? minOf(r.all.map((a) => a.bytes.length)) : 0
+  const minLength = scored.length ? minOf(scored.map((a) => a.bytes.length)) : 0
   const tiers = r.pieces.map(pieceTier)
   const tier = TIER_ORDER[Math.max(...tiers.map((t) => TIER_ORDER.indexOf(t)))]
   let backward: Reach = { bytes: 0, capped: false }
@@ -105,6 +115,7 @@ export function assessCost(r: AtomResult, wide: boolean, engineSlow: boolean | n
     backward,
     forward,
     chained: r.gaps.length > 0,
+    wide,
     portSlow: r.slow,
     engineSlow,
     drift: engineSlow !== null && engineSlow !== r.slow,

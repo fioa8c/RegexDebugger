@@ -47,6 +47,7 @@ describe('suggest', () => {
 
   it('has nothing to say about a good pattern', () => {
     expect(advise('foo.{0,10}barz')).toEqual([])
+    expect(advise('MaliciousPayloadDomain', { wide: true })).toEqual([])
   })
 
   it('turns engine diagnostics into fixes, and stops there on errors', () => {

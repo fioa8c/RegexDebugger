@@ -39,7 +39,7 @@
 - Fixture entries with more than 32 atoms store the count and a SHA-256 of the sorted hex list instead of the list, keeping the fixture at ~14 KB.
 - The Matches/Analysis tab choice is local state in `YaraWorkbench` (it resets to Matches when switching flavors).
 - The Verification section shows the pattern text from the start of the atom on (forward verification re-reads the atom, so a repetition inside its span counts as forward) and before it; the byte numbers live in the Scan cost lines. *(Changed after the final review: it first showed only the text after the atom, which hid `\s*` in `foo\s*bar`.)*
-- Weakest/average quality and atom counts include `wide` variants, since the engine searches for those too.
+- Atom counts and the atom list include `wide` variants, since the engine searches for those too. Weakest/average quality, minimum length and the `short-atom`/`common-bytes` suggestions score the pattern's own atoms (shown as "without wide's 00 bytes"), and the verification tier uses the searched atoms. *(Changed after the final review: scoring the interleaved 00s made Fast unreachable under `wide` and always fired two suggestions the pattern can't act on; Yara-X's own slow rule also uses the plain atoms.)*
 
 ## File Structure
 

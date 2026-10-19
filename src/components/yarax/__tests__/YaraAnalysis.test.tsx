@@ -4,14 +4,15 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { YaraAnalysis } from '../YaraAnalysis'
 import { YaraPatternPane } from '../YaraPatternPane'
 import { analyzePattern, costOf } from '../../../lib/yarax/analyze'
-import { DEFAULT_YARA_OPTIONS, type Diag } from '../../../lib/yarax/engine'
+import { DEFAULT_YARA_OPTIONS, type Diag, type YaraOptions } from '../../../lib/yarax/engine'
 
 afterEach(cleanup)
 
-function renderAnalysis(pattern: string, diags: Diag[] | null = []) {
-  const analysis = analyzePattern(pattern, DEFAULT_YARA_OPTIONS)
+function renderAnalysis(pattern: string, diags: Diag[] | null = [], o: Partial<YaraOptions> = {}) {
+  const opts = { ...DEFAULT_YARA_OPTIONS, ...o }
+  const analysis = analyzePattern(pattern, opts)
   return render(
-    <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={costOf(analysis, diags, false)} />,
+    <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={costOf(analysis, diags, opts.wide)} />,
   )
 }
 
@@ -39,6 +40,12 @@ describe('YaraAnalysis', () => {
   it('verifies forward from the start of the atom', () => {
     const { container } = renderAnalysis('foo\\s*bar')
     expect(container.textContent).toContain('→ forward: foo\\s*bar · ← backward: nothing before the atom')
+  })
+
+  it('verifies wide literals and says the grade ignores the 00 bytes', () => {
+    const { container } = renderAnalysis('abcd', [], { wide: true })
+    expect(container.textContent).toContain("weakest atom 80/88 (without wide's 00 bytes)")
+    expect(container.textContent).not.toContain('nothing is verified')
   })
 
   it("labels Slow as Yara-X's rule and lists only the first 16 atoms", () => {

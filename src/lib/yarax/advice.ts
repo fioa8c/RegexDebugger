@@ -113,7 +113,8 @@ export function suggest(pattern: string, r: AtomResult, cost: Cost, diags: Diag[
   }
   if (diags.some((d) => d.severity === 'error')) return out
 
-  const weak = weakestAtom(r.all)
+  // Score the pattern's own atoms; see Cost.wide.
+  const weak = weakestAtom(cost.wide ? r.pieces.flatMap((p) => p.atoms) : r.all)
   const atomSpan = weak ? pieceOf(r, weak.atom)?.span ?? null : null
   if (weak && weak.atom.bytes.length === 0) {
     out.push({
