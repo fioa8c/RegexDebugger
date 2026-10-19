@@ -32,6 +32,13 @@ App state lives in `App.tsx`: the JavaScript flavor's `pattern`, `flags`, `input
 - `lib/yarax/bytes.ts` maps byte offsets to string indices for the highlighter.
 - Tests load the engine with `initSync` and the `.wasm` from `node_modules`.
 
+**Yara-X analysis** (`lib/yarax/analyze.ts` → `components/yarax/YaraAnalysis.tsx`): a pure TypeScript port of how Yara-X 1.21.0 chooses atoms, run synchronously on every edit; the engine never exposes atoms.
+- Pipeline: `parse.ts` (tree with UTF-16 spans + coloring tokens) → `hir.ts` (regex-syntax 0.8.11's normalized form: merged literals, single-char alternations folded into classes, common prefixes lifted; each literal byte keeps its source span) → `atoms.ts` (Yara-X's paths in order: split at `.{n,m}` gaps over 200 under `/s`, literal or alternation of literals, masked literal, FastVM, PikeVM via `literal.ts`'s extractor) → `cost.ts` (tier, extents, grade) / `advice.ts` / `describe.ts`.
+- Keep the port faithful rather than "improving" it: small differences (alternation order, `Seq::dedup` only removing neighbors, i32::MIN for empty atoms) change which atoms win. `src/lib/yarax/__fixtures__/atoms.json` holds `yr debug atoms` output for 95 patterns and `atoms.test.ts` must match it exactly.
+- Upgrading `@virustotal/yara-x`: build `yara-x-cli` at the same tag with `--features debug-cmd`, run `YR=… node scripts/yarax/gen-atoms.mjs`, and port whatever changed upstream until the fixture test passes again.
+- The engine stays the authority: with an engine error the Analysis tab shows only the errors and fixes; the engine's `slow_pattern` warning is merged into the grade (`costOf`), and disagreement with the port is reported as drift.
+- `layer.ts` exists because `Highlighter` gives each character one span: it splits coloring tokens at underline boundaries and joins class names (`tok-lit hl-atom`).
+
 **Two independent regex systems that must agree:**
 - `lib/explain.ts`: a hand-written recursive tokenizer used for syntax coloring, the explanation, and group labels. Group tokens carry `children`, re-offset to **absolute** positions in the full pattern. Quantifiers (`*`, `+`, `?`, `{n,m}`, lazy `?`) are folded into the preceding token's `text`/`end` and recorded in its `quantifier` field. They become a standalone `quantifier` token only when nothing quantifiable precedes them.
 - `lib/matcher.ts`: runs the native `RegExp` via `matchAll`, always forcing `g` and truncating to one match when the user didn't set `g`. Capped at 10,000 matches. Group offsets come from `RegExpExecArray.indices`, so the matcher always adds the `d` flag internally (the UI doesn't expose it).

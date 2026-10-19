@@ -5,6 +5,7 @@ A regex101-style regular expression tester with two flavors: JavaScript, and **Y
 - matches and capture groups highlighted live in the text,
 - a match table with one column per capture group,
 - a plain-English explanation of the pattern,
+- for Yara-X, an analysis of the atoms the engine searches for, how much it verifies around each hit, a Fast/OK/Slow grade and rewrite suggestions,
 - a token cheat sheet.
 
 Everything runs in the browser. The JavaScript flavor uses the browser's native `RegExp`, and the Yara-X flavor uses the official `@virustotal/yara-x` WebAssembly build. There is no backend, so the production build is a static site you can host anywhere.

@@ -1,7 +1,23 @@
+import { useMemo } from 'react'
 import { CodeArea } from '../CodeArea'
 import { Flag } from '../Flag'
 import type { Span } from '../Highlighter'
 import { formatDiag, type Diag, type YaraOptions } from '../../lib/yarax/engine'
+import { layerSpans } from '../../lib/yarax/layer'
+import type { Span as SourceSpan, Token, TokenKind } from '../../lib/yarax/parse'
+
+const TOKEN_CLASS: Record<TokenKind, string> = {
+  literal: 'tok-lit',
+  escape: 'tok-esc',
+  dot: 'tok-dot',
+  meta: 'tok-meta',
+  anchor: 'tok-anchor',
+  class: 'tok-class',
+  quant: 'tok-quant',
+  group: 'tok-group',
+  non: 'tok-non',
+  alt: 'tok-alt',
+}
 
 const SUFFIXES = [
   { key: 'i', name: 'ignore case', tip: 'i suffix: case-insensitive (ASCII letters only)' },
@@ -32,6 +48,8 @@ export function YaraPatternPane({
   opts,
   errors,
   warnings,
+  tokens,
+  atomSpans,
   onPattern,
   onOpts,
 }: {
@@ -39,9 +57,19 @@ export function YaraPatternPane({
   opts: YaraOptions
   errors: Diag[]
   warnings: Diag[]
+  tokens: Token[]
+  atomSpans: SourceSpan[]
   onPattern: (v: string) => void
   onOpts: (o: YaraOptions) => void
 }) {
+  const spans = useMemo(
+    () =>
+      layerSpans(
+        tokens.map((t) => ({ start: t.start, end: t.end, className: TOKEN_CLASS[t.kind] })),
+        [...atomSpans.map((s) => ({ ...s, className: 'hl-atom' })), ...diagSpans([...errors, ...warnings])],
+      ),
+    [tokens, atomSpans, errors, warnings],
+  )
   const error = errors.map(formatDiag).join('\n')
   const warning = warnings.map(formatDiag).join('\n')
   const flag = (key: keyof YaraOptions, tip: string, name?: string) => (
@@ -64,7 +92,7 @@ export function YaraPatternPane({
         ariaLabel="Yara-X regular expression"
         value={pattern}
         onChange={onPattern}
-        spans={diagSpans([...errors, ...warnings])}
+        spans={spans}
         error={error}
       />
       {error && <div className="errorbox">{error}</div>}

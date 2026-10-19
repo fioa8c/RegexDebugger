@@ -1,16 +1,20 @@
-import { useMemo, type Dispatch, type ReactNode, type SetStateAction } from 'react'
+import { useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import { Frame } from '../Frame'
 import { InputPane } from '../InputPane'
 import type { Span } from '../Highlighter'
 import { YaraPatternPane } from './YaraPatternPane'
 import { YaraMatchList } from './YaraMatchList'
+import { YaraAnalysis } from './YaraAnalysis'
+import { analysisBadge, analyzePattern, costOf } from '../../lib/yarax/analyze'
 import { useYaraScan } from './useYaraScan'
 import { formatDiag, type YaraMatch, type YaraOptions } from '../../lib/yarax/engine'
 import { mapBytes } from '../../lib/yarax/bytes'
 import { YARA_SAMPLE_INPUT } from '../../lib/yarax/samples'
 import type { Layout } from '../../lib/layout'
+import type { Span as SourceSpan } from '../../lib/yarax/parse'
 
 const NO_MATCHES: YaraMatch[] = []
+const NO_SPANS: SourceSpan[] = []
 
 export function YaraWorkbench({
   pattern,
@@ -33,12 +37,26 @@ export function YaraWorkbench({
   onLayout: Dispatch<SetStateAction<Layout>>
   sidebar: ReactNode
 }) {
+  const [tab, setTab] = useState<'matches' | 'analysis'>('matches')
   const scan = useYaraScan(pattern, opts, input)
   const map = useMemo(() => mapBytes(input), [input])
   const result = scan.status === 'ready' ? scan.result : null
+  // Diagnostics for an earlier pattern must not grade the current one.
+  const fresh = scan.status === 'ready' && scan.fresh
   const errors = result?.errors ?? []
+  const rejected = fresh && errors.length > 0
   const warnings = result?.warnings ?? []
   const matches = result?.matches ?? NO_MATCHES
+  const analysis = useMemo(() => analyzePattern(pattern, opts), [pattern, opts])
+  const diags = useMemo(() => (result && fresh ? [...result.errors, ...result.warnings] : null), [result, fresh])
+  const cost = useMemo(() => costOf(analysis, diags, opts.wide), [analysis, diags, opts.wide])
+  const atomSpans = useMemo(
+    () =>
+      analysis.kind === 'ok' && !rejected
+        ? analysis.atoms.pieces.flatMap((p) => (p.span ? [p.span] : []))
+        : NO_SPANS,
+    [analysis, rejected],
+  )
 
   const inputSpans: Span[] = useMemo(
     () =>
@@ -68,6 +86,8 @@ export function YaraWorkbench({
           opts={opts}
           errors={errors}
           warnings={warnings}
+          tokens={analysis.kind === 'ok' ? analysis.tokens : []}
+          atomSpans={atomSpans}
           onPattern={onPattern}
           onOpts={onOpts}
         />
@@ -76,13 +96,21 @@ export function YaraWorkbench({
       results={
         <section className="results">
           <div className="tabs">
-            <button className="tab tab-on">
+            <button className={'tab' + (tab === 'matches' ? ' tab-on' : '')} onClick={() => setTab('matches')}>
               Matches
               <span className="tab-badge">{badge}</span>
             </button>
+            <button className={'tab' + (tab === 'analysis' ? ' tab-on' : '')} onClick={() => setTab('analysis')}>
+              Analysis
+              <span className={'tab-badge' + (cost && !rejected ? ` grade-${cost.grade}` : '')}>
+                {analysisBadge(analysis, cost, rejected)}
+              </span>
+            </button>
           </div>
           <div className="results-body">
-            {scan.status === 'loading' ? (
+            {tab === 'analysis' ? (
+              <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={cost} />
+            ) : scan.status === 'loading' ? (
               <div className="empty">Loading the Yara-X engine…</div>
             ) : scan.status === 'unavailable' ? (
               <div className="empty error-empty">
