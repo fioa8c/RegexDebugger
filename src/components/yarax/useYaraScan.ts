@@ -11,7 +11,9 @@ import {
 export type ScanState =
   | { status: 'loading' }
   | { status: 'unavailable'; reason: string; retry: () => void }
-  | { status: 'ready'; result: EngineResult; ms: number }
+  // `fresh` is false while the shown result is still the one for an
+  // earlier pattern or options (during the debounce after an edit).
+  | { status: 'ready'; result: EngineResult; ms: number; fresh: boolean }
 
 export interface EngineSource {
   load: () => Promise<YaraModule>
@@ -30,7 +32,7 @@ export function useYaraScan(
   const [mod, setMod] = useState<YaraModule | null>(engine.loaded)
   const [failure, setFailure] = useState('')
   const [attempt, setAttempt] = useState(0)
-  const [scan, setScan] = useState<{ result: EngineResult; ms: number } | null>(null)
+  const [scan, setScan] = useState<{ result: EngineResult; ms: number; pattern: string; opts: YaraOptions } | null>(null)
   const scanned = useRef(false)
 
   useEffect(() => {
@@ -50,7 +52,7 @@ export function useYaraScan(
     const run = () => {
       const t0 = performance.now()
       const result = runYara(mod, pattern, opts, input)
-      setScan({ result, ms: performance.now() - t0 })
+      setScan({ result, ms: performance.now() - t0, pattern, opts })
     }
     if (!scanned.current) {
       scanned.current = true
@@ -69,5 +71,5 @@ export function useYaraScan(
     return { status: 'unavailable', reason: failure, retry }
   }
   if (!scan) return { status: 'loading' }
-  return { status: 'ready', ...scan }
+  return { status: 'ready', result: scan.result, ms: scan.ms, fresh: scan.pattern === pattern && scan.opts === opts }
 }

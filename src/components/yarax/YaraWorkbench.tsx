@@ -43,18 +43,20 @@ export function YaraWorkbench({
   const scan = useYaraScan(pattern, opts, input)
   const map = useMemo(() => mapBytes(input), [input])
   const result = scan.status === 'ready' ? scan.result : null
+  // Diagnostics for an earlier pattern must not grade the current one.
+  const fresh = scan.status === 'ready' && scan.fresh
   const errors = result?.errors ?? []
   const warnings = result?.warnings ?? []
   const matches = result?.matches ?? NO_MATCHES
   const analysis = useMemo(() => analyzePattern(pattern, opts), [pattern, opts])
-  const diags = useMemo(() => (result ? [...result.errors, ...result.warnings] : null), [result])
+  const diags = useMemo(() => (result && fresh ? [...result.errors, ...result.warnings] : null), [result, fresh])
   const cost = useMemo(() => costOf(analysis, diags, opts.wide), [analysis, diags, opts.wide])
   const atomSpans = useMemo(
     () =>
-      analysis.kind === 'ok' && !errors.length
+      analysis.kind === 'ok' && !(fresh && errors.length)
         ? analysis.atoms.pieces.flatMap((p) => (p.span ? [p.span] : []))
         : NO_SPANS,
-    [analysis, errors.length],
+    [analysis, fresh, errors.length],
   )
 
   const inputSpans: Span[] = useMemo(

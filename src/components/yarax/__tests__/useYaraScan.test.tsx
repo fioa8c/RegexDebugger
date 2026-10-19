@@ -37,6 +37,27 @@ describe('useYaraScan', () => {
     ])
   })
 
+  it('marks the result stale until it has been computed for the current pattern and options', () => {
+    vi.useFakeTimers()
+    const engine = { load: () => Promise.resolve(stub), loaded: () => stub }
+    const { result, rerender } = renderHook(({ p, o, i }) => useYaraScan(p, o, i, engine), {
+      initialProps: { p: 'a', o: DEFAULT_YARA_OPTIONS, i: 'a' },
+    })
+    const fresh = () => result.current.status === 'ready' && result.current.fresh
+    const wide = { ...DEFAULT_YARA_OPTIONS, wide: true }
+    expect(fresh()).toBe(true)
+    rerender({ p: 'ab', o: DEFAULT_YARA_OPTIONS, i: 'a' })
+    expect(fresh()).toBe(false)
+    act(() => vi.advanceTimersByTime(150))
+    expect(fresh()).toBe(true)
+    rerender({ p: 'ab', o: wide, i: 'a' })
+    expect(fresh()).toBe(false)
+    act(() => vi.advanceTimersByTime(150))
+    // The diagnostics don't depend on the input, so typing there keeps them.
+    rerender({ p: 'ab', o: wide, i: 'ab' })
+    expect(fresh()).toBe(true)
+  })
+
   it('offers a retry after the engine fails to load', async () => {
     const load = vi
       .fn<() => Promise<YaraModule>>()
