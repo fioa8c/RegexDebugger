@@ -103,14 +103,18 @@ function unbounded(pattern: string, p: Piece, out: Suggestion[]): void {
   }
 }
 
-export function suggest(pattern: string, r: AtomResult, cost: Cost, diags: Diag[]): Suggestion[] {
-  const out: Suggestion[] = []
-  for (const d of diags) {
+// The engine's errors and warnings, each with its fix when one is known.
+export function diagSuggestions(diags: Diag[]): Suggestion[] {
+  return diags.map((d) => {
     const fix = diagFix(d)
     const label = d.labels.find((l) => l.start !== null && l.end !== null)
     const span = label ? { start: label.start!, end: label.end! } : null
-    out.push({ rule: 'engine-diag', text: `${d.code}: ${d.title}.${fix ? ` ${fix}` : ''}`, span })
-  }
+    return { rule: 'engine-diag', text: `${d.code}: ${d.title}.${fix ? ` ${fix}` : ''}`, span }
+  })
+}
+
+export function suggest(pattern: string, r: AtomResult, cost: Cost, diags: Diag[]): Suggestion[] {
+  const out = diagSuggestions(diags)
   if (diags.some((d) => d.severity === 'error')) return out
 
   // Score the pattern's own atoms; see Cost.wide.

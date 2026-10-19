@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzePattern, costOf } from '../analyze'
+import { analysisBadge, analyzePattern, costOf } from '../analyze'
 import { DEFAULT_YARA_OPTIONS } from '../engine'
 import { layerSpans } from '../layer'
 
@@ -41,6 +41,16 @@ describe('analyzePattern', () => {
   it("says it can't analyze patterns nested deeper than it can recurse", () => {
     const deep = '('.repeat(5000) + 'a' + ')'.repeat(5000)
     expect(analyzePattern(deep, DEFAULT_YARA_OPTIONS)).toMatchObject({ kind: 'unparsed', message: 'too large or too deeply nested to analyze', span: null })
+  })
+})
+
+describe('analysisBadge', () => {
+  it('shows the grade, or ! when the engine or the parser rejects the pattern', () => {
+    const ok = analyzePattern('foo.{0,10}barz', DEFAULT_YARA_OPTIONS)
+    expect(analysisBadge(ok, costOf(ok, [], false), false)).toBe('Fast')
+    expect(analysisBadge(ok, costOf(ok, [], false), true)).toBe('!')
+    expect(analysisBadge(analyzePattern('foo{', DEFAULT_YARA_OPTIONS), null, false)).toBe('!')
+    expect(analysisBadge(analyzePattern('', DEFAULT_YARA_OPTIONS), null, false)).toBe('–')
   })
 })
 

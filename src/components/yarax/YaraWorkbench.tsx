@@ -5,7 +5,7 @@ import type { Span } from '../Highlighter'
 import { YaraPatternPane } from './YaraPatternPane'
 import { YaraMatchList } from './YaraMatchList'
 import { YaraAnalysis } from './YaraAnalysis'
-import { analyzePattern, costOf } from '../../lib/yarax/analyze'
+import { analysisBadge, analyzePattern, costOf } from '../../lib/yarax/analyze'
 import { useYaraScan } from './useYaraScan'
 import { formatDiag, type YaraMatch, type YaraOptions } from '../../lib/yarax/engine'
 import { mapBytes } from '../../lib/yarax/bytes'
@@ -15,8 +15,6 @@ import type { Span as SourceSpan } from '../../lib/yarax/parse'
 
 const NO_MATCHES: YaraMatch[] = []
 const NO_SPANS: SourceSpan[] = []
-
-const GRADE_BADGE = { fast: 'Fast', ok: 'OK', slow: 'Slow' } as const
 
 export function YaraWorkbench({
   pattern,
@@ -46,6 +44,7 @@ export function YaraWorkbench({
   // Diagnostics for an earlier pattern must not grade the current one.
   const fresh = scan.status === 'ready' && scan.fresh
   const errors = result?.errors ?? []
+  const rejected = fresh && errors.length > 0
   const warnings = result?.warnings ?? []
   const matches = result?.matches ?? NO_MATCHES
   const analysis = useMemo(() => analyzePattern(pattern, opts), [pattern, opts])
@@ -53,10 +52,10 @@ export function YaraWorkbench({
   const cost = useMemo(() => costOf(analysis, diags, opts.wide), [analysis, diags, opts.wide])
   const atomSpans = useMemo(
     () =>
-      analysis.kind === 'ok' && !(fresh && errors.length)
+      analysis.kind === 'ok' && !rejected
         ? analysis.atoms.pieces.flatMap((p) => (p.span ? [p.span] : []))
         : NO_SPANS,
-    [analysis, fresh, errors.length],
+    [analysis, rejected],
   )
 
   const inputSpans: Span[] = useMemo(
@@ -103,8 +102,8 @@ export function YaraWorkbench({
             </button>
             <button className={'tab' + (tab === 'analysis' ? ' tab-on' : '')} onClick={() => setTab('analysis')}>
               Analysis
-              <span className={'tab-badge' + (cost ? ` grade-${cost.grade}` : '')}>
-                {cost ? GRADE_BADGE[cost.grade] : analysis.kind === 'unparsed' ? '!' : '–'}
+              <span className={'tab-badge' + (cost && !rejected ? ` grade-${cost.grade}` : '')}>
+                {analysisBadge(analysis, cost, rejected)}
               </span>
             </button>
           </div>

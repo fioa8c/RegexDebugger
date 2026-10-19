@@ -41,6 +41,15 @@ export function analyzePattern(pattern: string, opts: YaraOptions): PatternAnaly
   }
 }
 
+const GRADE_BADGE = { fast: 'Fast', ok: 'OK', slow: 'Slow' } as const
+
+// The Analysis tab's badge. `rejected`: the engine reported an error for
+// this pattern, which outranks any grade.
+export function analysisBadge(analysis: PatternAnalysis, cost: Cost | null, rejected: boolean): string {
+  if (rejected || analysis.kind === 'unparsed') return '!'
+  return cost ? GRADE_BADGE[cost.grade] : '–'
+}
+
 // The cost needs the engine's slow_pattern verdict; `diags` is null until
 // the engine has answered.
 export function costOf(analysis: PatternAnalysis, diags: Diag[] | null, wide: boolean): Cost | null {

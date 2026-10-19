@@ -63,6 +63,13 @@ describe('YaraAnalysis', () => {
     expect(container.querySelectorAll('li')).toHaveLength(1)
   })
 
+  it("shows the engine's error, not the parser's, when both reject the pattern", () => {
+    const e014: Diag = { severity: 'error', code: 'E014', title: 'invalid regular expression', labels: [], notes: [] }
+    const { container } = renderAnalysis('ab{', [e014])
+    expect(container.querySelector('.ya-h')?.textContent).toBe('The engine rejected this pattern')
+    expect(container.querySelector('li')?.textContent).toMatch(/^E014: invalid regular expression/)
+  })
+
   it('grades without waiting for the engine', () => {
     const { container } = renderAnalysis('foo.{0,10}barz', null)
     expect(container.querySelector('.ya-grade')?.textContent).toBe('● Fast')

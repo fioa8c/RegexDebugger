@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import type { PatternAnalysis } from '../../lib/yarax/analyze'
 import type { Piece, SearchedAtom } from '../../lib/yarax/atoms'
 import { MAX_QUALITY, pieceTier, TIER_LABEL, type Cost, type Reach } from '../../lib/yarax/cost'
-import { showAtom, suggest } from '../../lib/yarax/advice'
+import { diagSuggestions, showAtom, suggest } from '../../lib/yarax/advice'
 import type { Diag } from '../../lib/yarax/engine'
 import { atomQuality } from '../../lib/yarax/quality'
 
@@ -98,6 +98,20 @@ export function YaraAnalysis({
   )
 
   if (analysis.kind === 'empty') return <div className="empty">Enter a Yara-X regex to see its atoms and scan cost.</div>
+  // The engine is the authority on validity: its errors outrank both the
+  // parser's message and the analysis.
+  if (diags?.some((d) => d.severity === 'error')) {
+    return (
+      <div className="ya">
+        <h3 className="ya-h">The engine rejected this pattern</h3>
+        <ul className="ya-list">
+          {diagSuggestions(diags).map((s, i) => (
+            <li key={i}>{s.text}</li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
   if (analysis.kind === 'unparsed') {
     return (
       <div className="empty">
@@ -106,19 +120,6 @@ export function YaraAnalysis({
     )
   }
   if (!cost) return null
-  const rejected = (diags ?? []).some((d) => d.severity === 'error')
-  if (rejected) {
-    return (
-      <div className="ya">
-        <h3 className="ya-h">The engine rejected this pattern</h3>
-        <ul className="ya-list">
-          {suggestions.map((s, i) => (
-            <li key={i}>{s.text}</li>
-          ))}
-        </ul>
-      </div>
-    )
-  }
   const slowSource = cost.grade === 'slow' ? "Yara-X's rule" : "this tester's heuristic"
   return (
     <div className="ya">
