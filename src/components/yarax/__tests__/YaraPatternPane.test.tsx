@@ -14,6 +14,8 @@ describe('YaraPatternPane', () => {
         opts={DEFAULT_YARA_OPTIONS}
         errors={[]}
         warnings={[]}
+        tokens={[]}
+        atomSpans={[]}
         onPattern={() => {}}
         onOpts={() => {}}
       />,

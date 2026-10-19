@@ -236,3 +236,26 @@ body {
   visibility: hidden; pointer-events: none;
 }
 .flagwrap:hover .tip, .flagwrap:focus-within .tip { visibility: visible; }
+
+.hl-atom { text-decoration: underline 2px var(--accent); text-underline-offset: 4px; }
+.hl-atom.hl-err, .hl-err.hl-atom { text-decoration: underline wavy var(--error-fg); }
+.hl-atom.hl-warn, .hl-warn.hl-atom { text-decoration: underline wavy var(--warn-fg); }
+
+.ya { font-size: 13px; }
+.ya-h {
+  font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-dim); margin: 14px 0 6px; display: flex; gap: 8px; align-items: baseline;
+}
+.ya-h:first-child { margin-top: 2px; }
+.ya-grade { font-size: 12px; letter-spacing: 0.4px; }
+.grade-fast { color: var(--g2); }
+.grade-ok { color: var(--warn-fg); }
+.grade-slow { color: var(--error-fg); }
+.ya-nums { font: 12px/1.6 var(--mono); color: var(--text); }
+.ya-dim { color: var(--text-dim); font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.ya-atoms { border-collapse: collapse; }
+.ya-atoms td { padding: 2px 14px 2px 0; vertical-align: top; }
+.ya-atom { font-family: var(--mono); color: var(--text-hi); white-space: nowrap; }
+.ya-list { margin: 0; padding-left: 18px; }
+.ya-list li { margin: 3px 0; line-height: 1.5; }
+.ya code, .ya-dim code { font-family: var(--mono); color: var(--text-hi); }
