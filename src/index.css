@@ -12,6 +12,8 @@
   --error-bg: #37202a;
   --warn-fg: #ffd166;
   --warn-bg: #2f2a1c;
+  --scroll-thumb: #363c4a;
+  --scroll-thumb-hi: #4c5466;
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -36,6 +38,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 #root { display: flex; flex-direction: column; }
+
+/* macOS hides overlay scrollbars until you scroll; keep them visible so the panes look scrollable. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb); background-clip: padding-box;
+  border: 2px solid transparent; border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--scroll-thumb-hi); }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb) transparent; }
+}
 
 .app {
   display: grid; height: 100%;
@@ -67,9 +81,11 @@ body {
   font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 4px;
 }
 .linkbtn:hover { background: var(--bg-hover); }
+/* Keep a header with a button (Reset) as short as one without, so the side-by-side headers line up. */
+.pane-header .linkbtn { margin: -3px 0; }
 
-.codearea { position: flex; flex: 1; display: flex; flex-direction: column; }
-.codearea-scrim { flex: 1; position: relative; overflow: hidden; background: var(--bg-code); }
+.codearea { position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.codearea-scrim { flex: 1; position: relative; overflow: hidden; background: var(--bg-code); min-height: 0; }
 .codearea-ta, .codearea-hl {
   font: 13px/1.55 var(--mono);
   padding: 10px 12px;
@@ -85,7 +101,8 @@ body {
   caret-color: #fff; overflow: auto;
 }
 .codearea-ta::selection { background: rgba(91,156,255,0.35); color: transparent; }
-.codearea-hl { position: relative; pointer-events: none; }
+/* The extra right/bottom padding is one scrollbar wide, so the highlight layer can scroll as far as the textarea. */
+.codearea-hl { position: absolute; inset: 0; pointer-events: none; padding-right: 22px; padding-bottom: 20px; }
 .codearea-linecount { padding: 3px 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); background: var(--bg-pane); }
 
 .errorbox {
