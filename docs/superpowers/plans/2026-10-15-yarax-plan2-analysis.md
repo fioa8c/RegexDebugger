@@ -38,7 +38,7 @@
 - The engine fixture `engine.json` from the spec is not added: Plan 1 already tests the real engine under Node (`engine.test.ts`).
 - Fixture entries with more than 32 atoms store the count and a SHA-256 of the sorted hex list instead of the list, keeping the fixture at ~14 KB.
 - The Matches/Analysis tab choice is local state in `YaraWorkbench` (it resets to Matches when switching flavors).
-- The Verification section shows the pattern text after and before the atom; the byte numbers live in the Scan cost lines.
+- The Verification section shows the pattern text from the start of the atom on (forward verification re-reads the atom, so a repetition inside its span counts as forward) and before it; the byte numbers live in the Scan cost lines. *(Changed after the final review: it first showed only the text after the atom, which hid `\s*` in `foo\s*bar`.)*
 - Weakest/average quality and atom counts include `wide` variants, since the engine searches for those too.
 
 ## File Structure

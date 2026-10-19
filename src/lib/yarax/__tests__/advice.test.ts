@@ -23,6 +23,10 @@ describe('suggest', () => {
     expect(s[2].text).toMatch(/^PikeVM is used because of `\\s\*`/)
   })
 
+  it('flags a repetition inside the atom span as forward, since verification re-reads the atom', () => {
+    expect(advise('foo\\s*bar').map((x) => x.rule)).toEqual(['unbounded-forward', 'pikevm'])
+  })
+
   it('flags short and common-byte atoms', () => {
     expect(advise('ab')[0]).toMatchObject({ rule: 'short-atom', text: 'The best atom is only `ab` (40/88). Put a distinctive literal of 4 or more bytes next to it.' })
     expect(rules('\\x00\\x00\\x00\\x00')).toContain('common-bytes')

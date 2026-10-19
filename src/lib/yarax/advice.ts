@@ -78,13 +78,16 @@ function bounded(text: string, min: number): string {
   return `${body}{${min},${min + 16}}`
 }
 
+// Forward verification starts at the atom's first byte and re-reads the
+// atom, so a repetition anywhere after that point (even inside the atom's
+// span, as in `foo\s*bar`) is on the forward side.
 function unbounded(pattern: string, p: Piece, out: Suggestion[]): void {
   if (!p.span || pieceTier(p) === 'exact') return
   const atom = p.span
   for (const rep of unboundedReps(p.hir)) {
     const text = src(pattern, rep.span)
     const fix = `bound it, for example \`${bounded(text, rep.min)}\`.`
-    if (p.extent.forward === null && rep.span!.end > atom.end) {
+    if (p.extent.forward === null && rep.span!.end > atom.start) {
       out.push({
         rule: 'unbounded-forward',
         text: `\`${text}\` lets verification scan up to ${SCAN_LIMIT.toLocaleString('en-US')} bytes forward from each atom hit; ${fix}`,

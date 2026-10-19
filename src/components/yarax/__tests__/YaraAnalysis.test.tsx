@@ -36,6 +36,11 @@ describe('YaraAnalysis', () => {
     expect(text).toContain('the text `base64_decode`')
   })
 
+  it('verifies forward from the start of the atom', () => {
+    const { container } = renderAnalysis('foo\\s*bar')
+    expect(container.textContent).toContain('→ forward: foo\\s*bar · ← backward: nothing before the atom')
+  })
+
   it("labels Slow as Yara-X's rule and lists only the first 16 atoms", () => {
     const { container } = renderAnalysis('[a-z]')
     expect(container.querySelector('.ya-grade')?.textContent).toBe('● Slow')

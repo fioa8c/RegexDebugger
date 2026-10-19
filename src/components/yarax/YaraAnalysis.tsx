@@ -67,11 +67,12 @@ function Verification({ pieces, pattern }: { pieces: Piece[]; pattern: string })
         if (p.atoms.every((a) => a.exact && a.bytes.length > 0)) {
           return <li key={i}>{label}the atoms cover the whole pattern; nothing is verified</li>
         }
+        // Forward verification starts at the atom's first byte (see extentAt).
         const before = p.span ? pattern.slice(0, p.span.start) : ''
-        const after = p.span ? pattern.slice(p.span.end) : pattern
+        const after = p.span ? pattern.slice(p.span.start) : pattern
         return (
           <li key={i}>
-            {label}→ forward: {after ? <code>{after}</code> : 'nothing after the atom'} · ← backward:{' '}
+            {label}→ forward: {after ? <code>{after}</code> : 'nothing from the atom on'} · ← backward:{' '}
             {before ? <code>{before}</code> : 'nothing before the atom'}
           </li>
         )
