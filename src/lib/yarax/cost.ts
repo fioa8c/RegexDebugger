@@ -4,6 +4,7 @@
 // two constants below.
 
 import type { AtomResult, Extent, Piece } from './atoms'
+import { minOf } from './literal'
 import { atomQuality } from './quality'
 
 export const FAST_MIN_QUALITY = 60
@@ -74,9 +75,9 @@ function widest(a: Reach, b: Reach): Reach {
 
 export function assessCost(r: AtomResult, wide: boolean, engineSlow: boolean | null): Cost {
   const qualities = r.all.map((a) => Math.max(0, atomQuality(a.bytes)))
-  const weakest = qualities.length ? Math.min(...qualities) : 0
+  const weakest = qualities.length ? minOf(qualities) : 0
   const average = qualities.length ? qualities.reduce((n, q) => n + q, 0) / qualities.length : 0
-  const minLength = r.all.length ? Math.min(...r.all.map((a) => a.bytes.length)) : 0
+  const minLength = r.all.length ? minOf(r.all.map((a) => a.bytes.length)) : 0
   const tiers = r.pieces.map(pieceTier)
   const tier = TIER_ORDER[Math.max(...tiers.map((t) => TIER_ORDER.indexOf(t)))]
   let backward: Reach = { bytes: 0, capped: false }

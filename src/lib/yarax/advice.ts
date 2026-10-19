@@ -2,7 +2,7 @@
 // cost and the engine's diagnostics, and points at a span of the pattern.
 
 import { type Atom, type AtomResult, type Piece, makeWide } from './atoms'
-import { sameBytes } from './literal'
+import { maxOf, minOf, sameBytes } from './literal'
 import type { Hir } from './hir'
 import type { Span } from './parse'
 import type { Diag } from './engine'
@@ -140,7 +140,7 @@ export function suggest(pattern: string, r: AtomResult, cost: Cost, diags: Diag[
   for (const p of r.pieces) {
     const explosive = p.atoms.length > 256 || (p.slow && p.atoms.length > 2700)
     if (explosive) {
-      const len = Math.min(...p.atoms.map((a) => a.bytes.length))
+      const len = minOf(p.atoms.map((a) => a.bytes.length))
       out.push({
         rule: 'atom-explosion',
         text: `\`${src(pattern, p.span)}\` expands to ${p.atoms.length.toLocaleString('en-US')} atoms of ${len} byte${len === 1 ? '' : 's'}. Anchor the pattern on a literal instead.`,
@@ -152,8 +152,8 @@ export function suggest(pattern: string, r: AtomResult, cost: Cost, diags: Diag[
   for (const p of r.pieces) {
     if (p.atoms.length < 2 || p.atoms.length > 256) continue
     const qs = p.atoms.map((a) => Math.max(0, atomQuality(a.bytes)))
-    const min = Math.min(...qs)
-    if (min < FAST_MIN_QUALITY && Math.max(...qs) - min >= 20) {
+    const min = minOf(qs)
+    if (min < FAST_MIN_QUALITY && maxOf(qs) - min >= 20) {
       const w = p.atoms[qs.indexOf(min)]
       out.push({
         rule: 'weak-branch',

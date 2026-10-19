@@ -17,6 +17,24 @@ const LIMIT_REPEAT = 4
 const LIMIT_LITERAL_LEN = 4
 const LIMIT_TOTAL = MAX_ATOMS_PER_REGEXP
 
+// Atom lists can hold more elements than a call takes as arguments, so
+// these loop instead of spreading (`Math.min(...xs)`, `push(...xs)`).
+export function minOf(xs: number[]): number {
+  let m = Infinity
+  for (const x of xs) if (x < m) m = x
+  return m
+}
+
+export function maxOf(xs: number[]): number {
+  let m = -Infinity
+  for (const x of xs) if (x > m) m = x
+  return m
+}
+
+export function pushAll<T>(to: T[], from: T[]): void {
+  for (const x of from) to.push(x)
+}
+
 export function sameBytes(a: number[], b: number[]): boolean {
   return a.length === b.length && a.every((x, i) => x === b[i])
 }
@@ -79,12 +97,12 @@ export class Seq {
 
   minLiteralLen(): number | null {
     if (this.lits === null || this.lits.length === 0) return null
-    return Math.min(...this.lits.map((l) => l.bytes.length))
+    return minOf(this.lits.map((l) => l.bytes.length))
   }
 
   maxLiteralLen(): number | null {
     if (this.lits === null || this.lits.length === 0) return null
-    return Math.max(...this.lits.map((l) => l.bytes.length))
+    return maxOf(this.lits.map((l) => l.bytes.length))
   }
 
   maxCrossLen(other: Seq): number | null {
@@ -157,7 +175,7 @@ export class Seq {
     const drained = other.lits
     other.lits = []
     if (this.lits === null) return
-    this.lits.push(...drained)
+    pushAll(this.lits, drained)
     this.dedup()
   }
 }

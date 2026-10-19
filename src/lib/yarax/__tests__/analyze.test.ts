@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzePattern } from '../analyze'
+import { analyzePattern, costOf } from '../analyze'
 import { DEFAULT_YARA_OPTIONS } from '../engine'
 import { layerSpans } from '../layer'
 
@@ -29,6 +29,18 @@ describe('analyzePattern', () => {
     expect(analyzePattern('foo{', DEFAULT_YARA_OPTIONS)).toMatchObject({ kind: 'unparsed', message: 'unclosed counted repetition', span: { start: 3, end: 4 } })
     const many = Array.from({ length: 256 }, (_, i) => `x${i}y`).join('|')
     expect(analyzePattern(`(${many})z`, DEFAULT_YARA_OPTIONS)).toMatchObject({ kind: 'unparsed', message: /255 alternatives/ })
+  })
+
+  it('grades patterns with more atoms than a call can take as arguments', () => {
+    const opts = { ...DEFAULT_YARA_OPTIONS, s: true, wide: true, ascii: true }
+    const a = analyzePattern(Array(4).fill('[\\x80-\\xff]{4}').join('.{0,300}'), opts)
+    expect(a.kind).toBe('ok')
+    expect(costOf(a, null, true)?.count).toBe(131072)
+  })
+
+  it("says it can't analyze patterns nested deeper than it can recurse", () => {
+    const deep = '('.repeat(5000) + 'a' + ')'.repeat(5000)
+    expect(analyzePattern(deep, DEFAULT_YARA_OPTIONS)).toMatchObject({ kind: 'unparsed', message: 'too large or too deeply nested to analyze', span: null })
   })
 })
 

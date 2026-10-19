@@ -18,10 +18,14 @@ export function analyzePattern(pattern: string, opts: YaraOptions): PatternAnaly
   if (pattern.includes('\n')) return { kind: 'unparsed', message: 'a Yara-X regex must be on a single line', span: null }
   const crash = knownCrash(pattern)
   if (crash) return { kind: 'unparsed', message: `${crash} crashes the Yara-X engine, so it isn't analyzed`, span: null }
-  const parsed = parseYaraRegex(pattern)
-  if (!parsed.ok) return { kind: 'unparsed', message: parsed.error.message, span: parsed.error.span }
   const flags = { i: opts.i || opts.nocase, s: opts.s }
+  // Everything below recurses over the pattern and allocates per atom, so
+  // a deeply nested or huge pattern can throw (a stack overflow is a
+  // RangeError in V8 and an InternalError in Firefox). This runs during
+  // render, so never let it throw.
   try {
+    const parsed = parseYaraRegex(pattern)
+    if (!parsed.ok) return { kind: 'unparsed', message: parsed.error.message, span: parsed.error.span }
     const atoms = extractAtoms(translate(parsed.ast, flags), {
       nocase: flags.i,
       wide: opts.wide,
@@ -33,7 +37,7 @@ export function analyzePattern(pattern: string, opts: YaraOptions): PatternAnaly
     if (e instanceof TooManyAlternatives) {
       return { kind: 'unparsed', message: 'more than 255 alternatives in one alternation', span: null }
     }
-    throw e
+    return { kind: 'unparsed', message: 'too large or too deeply nested to analyze', span: null }
   }
 }
 

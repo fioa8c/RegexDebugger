@@ -11,7 +11,7 @@
 import { type Hir, concat, hirSpan, repetition } from './hir'
 import type { Span } from './parse'
 import { AtomsQuality, bestRangeInBytes, bestRangeInMaskedBytes } from './quality'
-import { DESIRED_ATOM_SIZE, MAX_ATOMS_PER_REGEXP, Seq, cmpBytes, extract, sameBytes } from './literal'
+import { DESIRED_ATOM_SIZE, MAX_ATOMS_PER_REGEXP, Seq, cmpBytes, extract, maxOf, minOf, pushAll, sameBytes } from './literal'
 
 export interface Atom {
   bytes: number[]
@@ -435,7 +435,7 @@ function thompsonAtoms(root: Hir): Located {
         const branches = stack.splice(stack.length - n, n)
         const joined = branches.reduce((all, b) => {
           all.quality.merge(b.quality)
-          all.atoms.push(...b.atoms)
+          pushAll(all.atoms, b.atoms)
           all.locs.push(...b.locs)
           all.span = unionSpans([all.span, b.span])
           return all
@@ -599,7 +599,7 @@ function fastAtoms(root: Hir): { atoms: Atom[]; span: Span | null; extent: Exten
       const r = pat.mask ? bestRangeInMaskedBytes(pat.bytes, pat.mask) : bestRangeInBytes(pat.bytes)
       return { pat, range: r.range, quality: r.quality }
     })
-    const q = found.length ? Math.min(...found.map((f) => f.quality)) : -2147483648
+    const q = found.length ? minOf(found.map((f) => f.quality)) : -2147483648
     if (q > bestQuality) {
       bestQuality = q
       best = found
@@ -614,13 +614,13 @@ function fastAtoms(root: Hir): { atoms: Atom[]; span: Span | null; extent: Exten
   const spans: (Span | null)[] = []
   for (const { pat, range } of best as { pat: FastPattern; range: [number, number] }[]) {
     const a = atomFromRange(pat.bytes, range)
-    if (pat.mask) atoms.push(...maskCombinations(a, pat.mask.slice(range[0], range[1])))
+    if (pat.mask) pushAll(atoms, maskCombinations(a, pat.mask.slice(range[0], range[1])))
     else atoms.push(a)
     spans.push(...pat.src.slice(range[0], range[1]))
     extent = maxExtent(extent, { backward: add(before, range[0]), forward: add(after, pat.bytes.length - range[0]) })
   }
   if (pieces.length > 1) atoms.forEach((a) => (a.exact = false))
-  if (Math.min(...atoms.map((a) => a.bytes.length)) < 2) throw new FastIncompatible()
+  if (minOf(atoms.map((a) => a.bytes.length)) < 2) throw new FastIncompatible()
   return { atoms, span: unionSpans(spans), extent }
 }
 
@@ -697,8 +697,8 @@ function isSlowBytes(bytes: number[]): boolean {
 function slowAtoms(atoms: Atom[]): boolean {
   if (atoms.length === 0) return true
   const lens = atoms.map((a) => a.bytes.length)
-  const min = Math.min(...lens)
-  const max = Math.max(...lens)
+  const min = minOf(lens)
+  const max = maxOf(lens)
   if (min < 2) return true
   return min === 2 && max === 2 && atoms.length > 2700
 }
@@ -789,16 +789,16 @@ export function extractAtoms(hir: Hir, opts: AtomOptions): AtomResult {
   const widen = (p: Piece, fullword: boolean): SearchedAtom[] => {
     const out: SearchedAtom[] = []
     if (p.path === 'literal' && p.hir.k === 'lit') {
-      if (raw) out.push(...plain(p.atoms))
+      if (raw) pushAll(out, plain(p.atoms))
       if (wide) {
         const a = bestAtomInBytes(wideBytes(p.hir.bytes))
         if (fullword) a.exact = false
-        out.push(...(opts.nocase ? caseCombinations(a) : [a]).map((atom) => ({ atom, wide: true })))
+        pushAll(out, (opts.nocase ? caseCombinations(a) : [a]).map((atom) => ({ atom, wide: true })))
       }
       return out
     }
-    if (wide) out.push(...p.atoms.map((a) => ({ atom: makeWide(a), wide: true })))
-    if (raw) out.push(...plain(p.atoms))
+    if (wide) pushAll(out, p.atoms.map((a) => ({ atom: makeWide(a), wide: true })))
+    if (raw) pushAll(out, plain(p.atoms))
     return out
   }
   const finish = (pieces: Piece[], gaps: Gap[], slow: boolean): AtomResult => ({
