@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { PatternAnalysis } from '../../lib/yarax/analyze'
 import type { Piece, SearchedAtom } from '../../lib/yarax/atoms'
 import { MAX_QUALITY, pieceTier, TIER_LABEL, type Cost, type Reach } from '../../lib/yarax/cost'
 import { diagSuggestions, showAtom, suggest } from '../../lib/yarax/advice'
-import type { Diag } from '../../lib/yarax/engine'
+import { escapeSlashes, hasUnescapedSlash, type Diag } from '../../lib/yarax/engine'
+import { fixerRegexLine } from '../../lib/yarax/meta'
 import { atomQuality } from '../../lib/yarax/quality'
 
 const MAX_ATOM_ROWS = 16
@@ -81,16 +82,42 @@ function Verification({ pieces, pattern }: { pieces: Piece[]; pattern: string })
   )
 }
 
+// Keyed by the line, so "Copied" resets when the pattern changes.
+function CopyLine({ line, onApply }: { line: string; onApply?: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const copy = () => {
+    navigator.clipboard?.writeText(line).then(
+      () => setCopied(true),
+      () => {},
+    )
+  }
+  return (
+    <div className="ya-fixer">
+      <code>{line}</code>
+      <button className="linkbtn" onClick={copy}>
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+      {onApply && (
+        <button className="linkbtn" onClick={onApply}>
+          Apply
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function YaraAnalysis({
   pattern,
   analysis,
   diags,
   cost,
+  onPattern,
 }: {
   pattern: string
   analysis: PatternAnalysis
   diags: Diag[] | null
   cost: Cost | null
+  onPattern: (v: string) => void
 }) {
   const suggestions = useMemo(
     () => (analysis.kind === 'ok' && cost ? suggest(pattern, analysis.atoms, cost, diags ?? []) : []),
@@ -109,6 +136,12 @@ export function YaraAnalysis({
             <li key={i}>{s.text}</li>
           ))}
         </ul>
+        {hasUnescapedSlash(pattern) && (
+          <>
+            <h3 className="ya-h">With every / escaped</h3>
+            <CopyLine key={pattern} line={escapeSlashes(pattern)} onApply={() => onPattern(escapeSlashes(pattern))} />
+          </>
+        )}
       </div>
     )
   }
@@ -153,6 +186,12 @@ export function YaraAnalysis({
       ) : (
         <div className="ya-dim">None: this pattern has good atoms and bounded verification.</div>
       )}
+
+      <h3 className="ya-h">regex-clean fixer</h3>
+      <CopyLine key={pattern} line={fixerRegexLine(pattern)} />
+      <div className="ya-dim">
+        For the rule's <code>meta:</code> section. It holds the bare regex, without the suffixes or modifiers.
+      </div>
 
       <h3 className="ya-h">Structure</h3>
       <ul className="expllist">

@@ -109,7 +109,7 @@ export function YaraWorkbench({
           </div>
           <div className="results-body">
             {tab === 'analysis' ? (
-              <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={cost} />
+              <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={cost} onPattern={onPattern} />
             ) : scan.status === 'loading' ? (
               <div className="empty">Loading the Yara-X engine…</div>
             ) : scan.status === 'unavailable' ? (

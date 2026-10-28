@@ -1,18 +1,32 @@
 // @vitest-environment jsdom
-import { cleanup, render } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { YaraAnalysis } from '../YaraAnalysis'
 import { YaraPatternPane } from '../YaraPatternPane'
 import { analyzePattern, costOf } from '../../../lib/yarax/analyze'
 import { DEFAULT_YARA_OPTIONS, type Diag, type YaraOptions } from '../../../lib/yarax/engine'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
-function renderAnalysis(pattern: string, diags: Diag[] | null = [], o: Partial<YaraOptions> = {}) {
+function renderAnalysis(
+  pattern: string,
+  diags: Diag[] | null = [],
+  o: Partial<YaraOptions> = {},
+  onPattern: (v: string) => void = () => {},
+) {
   const opts = { ...DEFAULT_YARA_OPTIONS, ...o }
   const analysis = analyzePattern(pattern, opts)
   return render(
-    <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={costOf(analysis, diags, opts.wide)} />,
+    <YaraAnalysis
+      pattern={pattern}
+      analysis={analysis}
+      diags={diags}
+      cost={costOf(analysis, diags, opts.wide)}
+      onPattern={onPattern}
+    />,
   )
 }
 
@@ -25,6 +39,7 @@ describe('YaraAnalysis', () => {
       'Atoms',
       'Verification',
       'Suggestions',
+      'regex-clean fixer',
       'Structure',
     ])
     expect(container.querySelector('.ya-grade')?.textContent).toBe('● OK')
@@ -35,6 +50,17 @@ describe('YaraAnalysis', () => {
     expect(text).toContain('inexact (needs verification)')
     expect(text).toContain('PikeVM is used because of `\\s*`')
     expect(text).toContain('the text `base64_decode`')
+  })
+
+  it('offers the escaped fixerRegex meta line and copies it', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const { container } = renderAnalysis('eval\\("(\\\\u0[a-f0-9]{3}){300,}"\\);<\\/script>')
+    const line = 'fixerRegex = "eval\\\\(\\"(\\\\\\\\u0[a-f0-9]{3}){300,}\\"\\\\);<\\\\/script>"'
+    expect(container.querySelector('.ya-fixer code')?.textContent).toBe(line)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(writeText).toHaveBeenCalledWith(line)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy())
   })
 
   it('verifies forward from the start of the atom', () => {
@@ -61,6 +87,22 @@ describe('YaraAnalysis', () => {
     const { container } = renderAnalysis('a.*?b.*c', [e015])
     expect(container.querySelector('.ya-h')?.textContent).toBe('The engine rejected this pattern')
     expect(container.querySelectorAll('li')).toHaveLength(1)
+    expect(container.querySelector('.ya-fixer')).toBeNull()
+  })
+
+  it('offers the pattern with every unescaped / escaped, to copy or apply', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const onPattern = vi.fn()
+    const slash: Diag = { severity: 'error', code: 'input', title: 'Yara-X ends the regex at an unescaped `/`', labels: [], notes: [] }
+    const { container } = renderAnalysis('<\\/a>[/]\\\\/', [slash], {}, onPattern)
+    const fixed = '<\\/a>[\\/]\\\\\\/'
+    expect(container.querySelector('.ya-fixer code')?.textContent).toBe(fixed)
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    expect(onPattern).toHaveBeenCalledWith(fixed)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(writeText).toHaveBeenCalledWith(fixed)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy())
   })
 
   it("shows the engine's error, not the parser's, when both reject the pattern", () => {

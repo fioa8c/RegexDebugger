@@ -5,6 +5,7 @@ import * as yarax from '@virustotal/yara-x'
 import {
   DEFAULT_YARA_OPTIONS,
   buildRuleSource,
+  escapeSlashes,
   formatDiag,
   hasUnescapedSlash,
   parseDiag,
@@ -77,6 +78,30 @@ describe('hasUnescapedSlash', () => {
     expect(hasUnescapedSlash('a\\/b')).toBe(false)
     expect(hasUnescapedSlash('a\\\\/b')).toBe(true)
     expect(hasUnescapedSlash('abc')).toBe(false)
+  })
+})
+
+describe('escapeSlashes', () => {
+  it.each([
+    ['a/b', 'a\\/b'],
+    ['a\\/b', 'a\\/b'],
+    ['[/]', '[\\/]'],
+    ['a\\\\/b', 'a\\\\\\/b'],
+    ['<\\/script>/x', '<\\/script>\\/x'],
+    ['ab\\', 'ab\\'],
+  ])('rewrites %s as %s, leaving no slash for hasUnescapedSlash', (pattern, fixed) => {
+    expect(escapeSlashes(pattern)).toBe(fixed)
+    expect(hasUnescapedSlash(fixed)).toBe(false)
+  })
+
+  it.each([
+    ['a/b', 'xa/bx', 'a/b'],
+    ['[/]', 'a/b', '/'],
+    ['a\\\\/b', 'a\\/b', 'a\\/b'],
+  ])('gives the engine a pattern it accepts: %s', (pattern, input, matched) => {
+    const r = runYara(mod, escapeSlashes(pattern), opts(), input)
+    expect(r.errors).toEqual([])
+    expect(r.matches.map((m) => input.slice(m.offset, m.offset + m.length))).toEqual([matched])
   })
 })
 
