@@ -4,6 +4,7 @@ import { Flag } from '../Flag'
 import type { Span } from '../Highlighter'
 import { formatDiag, type Diag, type YaraOptions } from '../../lib/yarax/engine'
 import { layerSpans } from '../../lib/yarax/layer'
+import { fromFixerRegexLine } from '../../lib/yarax/meta'
 import type { Span as SourceSpan, Token, TokenKind } from '../../lib/yarax/parse'
 
 const TOKEN_CLASS: Record<TokenKind, string> = {
@@ -70,6 +71,8 @@ export function YaraPatternPane({
       ),
     [tokens, atomSpans, errors, warnings],
   )
+  // A pasted `fixerRegex = "…"` meta line: offer the regex it holds.
+  const fixerRegex = useMemo(() => fromFixerRegexLine(pattern), [pattern])
   const error = errors.map(formatDiag).join('\n')
   const warning = warnings.map(formatDiag).join('\n')
   const flag = (key: keyof YaraOptions, tip: string, name?: string) => (
@@ -95,6 +98,15 @@ export function YaraPatternPane({
         spans={spans}
         error={error}
       />
+      {fixerRegex && (
+        <div className="infobox">
+          This is a <code>fixerRegex</code> meta line.{' '}
+          <button className="linkbtn" onClick={() => onPattern(fixerRegex)}>
+            Load its regex
+          </button>{' '}
+          <code>{fixerRegex}</code>
+        </div>
+      )}
       {error && <div className="errorbox">{error}</div>}
       {warning && <div className="warnbox">{warning}</div>}
       <footer className="flagbar">

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { YaraPatternPane } from '../YaraPatternPane'
 import { DEFAULT_YARA_OPTIONS } from '../../../lib/yarax/engine'
 
@@ -31,5 +31,27 @@ describe('YaraPatternPane', () => {
       'ascii: match the plain bytes; with wide, search both encodings',
       'fullword: no ASCII letter or digit right before or after the match',
     ])
+  })
+
+  it('loads the regex out of a pasted fixerRegex meta line', () => {
+    const onPattern = vi.fn()
+    const pane = (pattern: string) => (
+      <YaraPatternPane
+        pattern={pattern}
+        opts={DEFAULT_YARA_OPTIONS}
+        errors={[]}
+        warnings={[]}
+        tokens={[]}
+        atomSpans={[]}
+        onPattern={onPattern}
+        onOpts={() => {}}
+      />
+    )
+    const { container, rerender } = render(pane('fixerRegex = "eval\\\\(\\"x\\"\\\\)"'))
+    expect(container.querySelector('.infobox code:last-child')?.textContent).toBe('eval\\("x"\\)')
+    fireEvent.click(screen.getByRole('button', { name: 'Load its regex' }))
+    expect(onPattern).toHaveBeenCalledWith('eval\\("x"\\)')
+    rerender(pane('eval\\("x"\\)'))
+    expect(container.querySelector('.infobox')).toBeNull()
   })
 })

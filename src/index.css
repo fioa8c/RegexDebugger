@@ -210,6 +210,14 @@ body {
   border-top: 1px solid #4a3d1f;
   white-space: pre-wrap;
 }
+.infobox {
+  margin: 0; padding: 6px 12px;
+  background: var(--bg-pane); color: var(--text);
+  font-size: 12px; line-height: 1.5;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.infobox code { font-family: var(--mono); color: var(--text-hi); }
 .flag-sep { width: 1px; margin: 2px 4px; background: var(--border); }
 .hl-err { text-decoration: underline wavy var(--error-fg); text-underline-offset: 3px; }
 .hl-warn { text-decoration: underline wavy var(--warn-fg); text-underline-offset: 3px; }
@@ -259,3 +267,5 @@ body {
 .ya-list { margin: 0; padding-left: 18px; }
 .ya-list li { margin: 3px 0; line-height: 1.5; }
 .ya code, .ya-dim code { font-family: var(--mono); color: var(--text-hi); }
+.ya-fixer { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+.ya-fixer code { flex: 1; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
