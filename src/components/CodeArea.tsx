@@ -23,7 +23,6 @@ export function CodeArea({
   const sync = () => {
     if (taRef.current && hlRef.current) {
       hlRef.current.scrollTop = taRef.current.scrollTop
-      hlRef.current.scrollLeft = taRef.current.scrollLeft
     }
   }
 
@@ -42,7 +41,6 @@ export function CodeArea({
           className="codearea-ta"
           value={value}
           placeholder={placeholder}
-          wrap="off"
           spellCheck={false}
           onChange={(e) => onChange(e.target.value)}
           onScroll={sync}

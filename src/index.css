@@ -90,7 +90,9 @@ body {
   font: 13px/1.55 var(--mono);
   padding: 10px 12px;
   margin: 0;
-  white-space: pre;
+  white-space: pre-wrap; overflow-wrap: break-word;
+  /* Both layers always reserve a scrollbar, so they wrap at the same width. */
+  overflow-x: hidden; overflow-y: scroll;
   min-height: 100%;
 }
 .codearea-ta {
@@ -98,11 +100,15 @@ body {
   width: 100%; height: 100%;
   border: 0; outline: 0; resize: none;
   background: transparent; color: transparent;
-  caret-color: #fff; overflow: auto;
+  caret-color: #fff;
 }
 .codearea-ta::selection { background: rgba(91,156,255,0.35); color: transparent; }
-/* The extra right/bottom padding is one scrollbar wide, so the highlight layer can scroll as far as the textarea. */
-.codearea-hl { position: absolute; inset: 0; pointer-events: none; padding-right: 22px; padding-bottom: 20px; }
+/* The extra bottom padding covers the textarea's empty line after a trailing newline, so the highlight layer can scroll as far. */
+.codearea-hl { position: absolute; inset: 0; pointer-events: none; padding-bottom: 40px; }
+.codearea-hl::-webkit-scrollbar-thumb { background: transparent; }
+@supports not selector(::-webkit-scrollbar) {
+  .codearea-hl { scrollbar-color: transparent transparent; }
+}
 .codearea-linecount { padding: 3px 12px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); background: var(--bg-pane); }
 
 .errorbox {

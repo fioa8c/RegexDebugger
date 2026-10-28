@@ -61,7 +61,6 @@ export function Highlighter(props: {
       ref={elRef}
       className={className}
       aria-hidden="true"
-      style={{ whiteSpace: 'pre', overflow: 'hidden' }}
       dangerouslySetInnerHTML={{ __html: html + '<span class="__hl-tail"></span>' }}
     />
   )
