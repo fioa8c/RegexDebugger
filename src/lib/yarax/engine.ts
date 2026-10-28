@@ -170,6 +170,18 @@ export function hasUnescapedSlash(pattern: string): boolean {
   return false
 }
 
+// Escapes exactly the slashes hasUnescapedSlash finds, classes included.
+export function escapeSlashes(pattern: string): string {
+  let out = ''
+  for (let i = 0; i < pattern.length; i++) {
+    if (pattern[i] === '\\') {
+      out += pattern.slice(i, i + 2)
+      i++
+    } else out += pattern[i] === '/' ? '\\/' : pattern[i]
+  }
+  return out
+}
+
 export function knownCrash(pattern: string): string | null {
   for (let i = 0; i < pattern.length; i++) {
     if (pattern[i] === '\\') {

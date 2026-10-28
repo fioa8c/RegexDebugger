@@ -11,11 +11,22 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function renderAnalysis(pattern: string, diags: Diag[] | null = [], o: Partial<YaraOptions> = {}) {
+function renderAnalysis(
+  pattern: string,
+  diags: Diag[] | null = [],
+  o: Partial<YaraOptions> = {},
+  onPattern: (v: string) => void = () => {},
+) {
   const opts = { ...DEFAULT_YARA_OPTIONS, ...o }
   const analysis = analyzePattern(pattern, opts)
   return render(
-    <YaraAnalysis pattern={pattern} analysis={analysis} diags={diags} cost={costOf(analysis, diags, opts.wide)} />,
+    <YaraAnalysis
+      pattern={pattern}
+      analysis={analysis}
+      diags={diags}
+      cost={costOf(analysis, diags, opts.wide)}
+      onPattern={onPattern}
+    />,
   )
 }
 
@@ -77,6 +88,21 @@ describe('YaraAnalysis', () => {
     expect(container.querySelector('.ya-h')?.textContent).toBe('The engine rejected this pattern')
     expect(container.querySelectorAll('li')).toHaveLength(1)
     expect(container.querySelector('.ya-fixer')).toBeNull()
+  })
+
+  it('offers the pattern with every unescaped / escaped, to copy or apply', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const onPattern = vi.fn()
+    const slash: Diag = { severity: 'error', code: 'input', title: 'Yara-X ends the regex at an unescaped `/`', labels: [], notes: [] }
+    const { container } = renderAnalysis('<\\/a>[/]\\\\/', [slash], {}, onPattern)
+    const fixed = '<\\/a>[\\/]\\\\\\/'
+    expect(container.querySelector('.ya-fixer code')?.textContent).toBe(fixed)
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }))
+    expect(onPattern).toHaveBeenCalledWith(fixed)
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(writeText).toHaveBeenCalledWith(fixed)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied' })).toBeTruthy())
   })
 
   it("shows the engine's error, not the parser's, when both reject the pattern", () => {
